@@ -1,0 +1,108 @@
+.restaurant-orders-page {
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.restaurant-orders-header h1 {
+  margin: 0 0 6px 0;
+  font-size: 28px;
+}
+
+.restaurant-orders-header p {
+  margin: 0 0 16px 0;
+  color: #6b7280;
+}
+
+.ro-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 14px;
+}
+
+.ro-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ro-table-wrapper {
+  overflow-x: auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.ro-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ro-table thead {
+  background: #f9fafb;
+}
+
+.ro-table th,
+.ro-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ro-table th {
+  font-weight: 600;
+  color: #374151;
+}
+
+.ro-items-list {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.ro-items-list li {
+  margin: 0;
+  padding: 0;
+}
+
+.ro-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.ro-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ro-status-processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ro-status-completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ro-status-cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .restaurant-orders-page {
+    padding: 20px 12px;
+  }
+
+  .ro-table th,
+  .ro-table td {
+    padding: 10px;
+  }
+}

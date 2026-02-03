@@ -1,0 +1,310 @@
+.contact-section {
+    padding: 60px 80px;
+    background: #fff;
+    font-family: "Inter", sans-serif;
+  }
+  
+  .contact-wrapper {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+    align-items: stretch;
+  }
+  
+  .contact-form h2 {
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+  
+  .contact-form p {
+    color: #6b7280;
+    margin-bottom: 30px;
+  }
+  
+  .form-row {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .form-group {
+    flex: 1;
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  
+  .form-group label span {
+    color: red;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    outline: none;
+    font-size: 14px;
+  }
+  
+  .form-group input:focus,
+  .form-group textarea:focus {
+    border-color: #2563eb;
+  }
+  
+  .send-btn {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  
+  .send-btn:hover {
+    background: #1e4ed8;
+  }
+  
+  /* Map */
+  .contact-map iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    border-radius: 10px;
+    border: none;
+  }
+  
+  /* Bottom Info */
+  .contact-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 60px;
+    gap: 20px;
+  }
+  
+  .info-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 10px;
+    flex: 1;
+  }
+  
+  .icon {
+    font-size: 22px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+  
+  .icon.email {
+    background: #e0ecff;
+  }
+  
+  .icon.phone {
+    background: #ffe6cc;
+  }
+  
+  .icon.address {
+    background: #d1fae5;
+  }
+  
+  /* Responsive */
+  @media (max-width: 992px) {
+    .contact-section {
+      padding: 40px 30px;
+    }
+
+    .contact-wrapper {
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    .contact-form h2 {
+      font-size: 28px;
+    }
+
+    .contact-map iframe {
+      min-height: 350px;
+    }
+
+    .contact-info {
+      flex-direction: column;
+      margin-top: 40px;
+      gap: 15px;
+    }
+
+    .form-row {
+      flex-direction: column;
+      gap: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .contact-section {
+      padding: 30px 20px;
+    }
+
+    .contact-wrapper {
+      gap: 25px;
+    }
+
+    .contact-form h2 {
+      font-size: 24px;
+    }
+
+    .contact-form p {
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .send-btn {
+      padding: 10px 24px;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .contact-map iframe {
+      min-height: 300px;
+    }
+
+    .contact-info {
+      margin-top: 30px;
+      gap: 12px;
+    }
+
+    .info-card {
+      padding: 16px;
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .icon {
+      font-size: 20px;
+      padding: 10px;
+      flex-shrink: 0;
+    }
+
+    .info-card h4 {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .info-card p {
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .contact-section {
+      padding: 20px 15px;
+    }
+
+    .contact-form h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .contact-form p {
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      padding: 10px;
+      font-size: 14px;
+    }
+
+
+    .send-btn {
+      padding: 12px 20px;
+      font-size: 15px;
+    }
+
+    .contact-map iframe {
+      min-height: 250px;
+      border-radius: 8px;
+    }
+
+    .contact-info {
+      margin-top: 25px;
+      gap: 10px;
+    }
+
+    .info-card {
+      padding: 14px;
+      gap: 12px;
+    }
+
+    .icon {
+      font-size: 18px;
+      padding: 8px;
+    }
+
+    .info-card h4 {
+      font-size: 15px;
+    }
+
+    .info-card p {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .contact-section {
+      padding: 15px 12px;
+    }
+
+    .contact-form h2 {
+      font-size: 20px;
+    }
+
+    .contact-form p {
+      font-size: 12px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      padding: 9px;
+      font-size: 13px;
+    }
+
+    .contact-map iframe {
+      min-height: 220px;
+    }
+
+    .info-card {
+      padding: 12px;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 16px;
+    }
+  }
+  

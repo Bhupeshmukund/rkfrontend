@@ -1,0 +1,335 @@
+{
+  "categories": [
+    { "id": 1, "name": "Laboratory Glassware", "slug": "laboratory-glassware", "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg" },
+    { "id": 2, "name": "Laboratory Plasticware", "slug": "laboratory-plasticware", "image": "https://saffronchemicals.com/wp-content/webp-express/webp-images/uploads/2024/03/laboratory-equipments.jpg.webp" },
+    { "id": 3, "name": "Centrifuges", "slug": "centrifuges", "image": "http://saffronchemicals.com/wp-content/webp-express/webp-images/uploads/2024/01/lab-equipments-01.jpg.webp" },
+    { "id": 4, "name": "Physics Labware", "slug": "physics-labware", "image": "/images/categories/physics.jpg" },
+    { "id": 5, "name": "Pharmacy Equipments", "slug": "pharmacy-equipments", "image": "/images/categories/pharmacy.jpg" },
+    { "id": 6, "name": "Microscope", "slug": "microscope", "image": "/images/categories/microscope.jpg" },
+    { "id": 7, "name": "Test Sieves", "slug": "test-sieves", "image": "/images/categories/sieve.jpg" },
+    { "id": 8, "name": "Anatomical Model", "slug": "anatomical-model", "image": "/images/categories/anatomy.jpg" },
+    { "id": 9, "name": "Mathematic Kit", "slug": "mathematic-kit", "image": "/images/categories/math.jpg" },
+    { "id": 10, "name": "Engineering Equipments", "slug": "engineering-equipments", "image": "/images/categories/engineering.jpg" }
+  ],
+
+  "products": [
+
+    {
+      "id": 101,
+      "categoryId": 1,
+      "name": "Conical Flask – Polypropylene",
+      "priceRange": "₹25 – ₹100",
+      "image": "https://raw.githubusercontent.com/Bhupeshmukund/ittech/main/assets/images/home-2/call-do-img.png",
+      
+      "variants": [
+        { "id": 1011, "sku": "BE-100", "price": 25, "stock": 50, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 1012, "sku": "BE-250", "price": 50, "stock": 40, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 1013, "sku": "BE-500", "price": 100, "stock": 30, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ],
+      "description": "Manikarn Polypropylene Conical Flask – Strong, Leakproof & Easy to Use Made from high-quality polypropylene, this conical flask is durable and safe for lab use. <br> Perfect for mixing, cooling, dissolving, or holding liquids and chemical solutions. It can be used in experiments for collecting, measuring, or storing samples. Comes with a screw cap to prevent leaks and keep contents clean and safe. <br>Sizes available: 100 ml, 250 ml, and 500 ml. Easy to handle and clean after use. Great for schools, colleges, science fairs, and laboratories. Export-quality flask designed for both students and professionals."
+    },
+    {
+      "id": 110,
+      "categoryId": 1,
+      "name": "Conical Flask – Polypropylene",
+      "priceRange": "₹25 – ₹100",
+      "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg",
+      "variants": [
+        { "id": 1011, "sku": "BE-100", "price": 25, "stock": 50, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 1012, "sku": "BE-250", "price": 50, "stock": 40, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 1013, "sku": "BE-500", "price": 100, "stock": 30, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ],
+      "description": "Manikarn Polypropylene Conical Flask – Strong, Leakproof & Easy to Use Made from high-quality polypropylene, this conical flask is durable and safe for lab use. <br> Perfect for mixing, cooling, dissolving, or holding liquids and chemical solutions. It can be used in experiments for collecting, measuring, or storing samples. Comes with a screw cap to prevent leaks and keep contents clean and safe. <br>Sizes available: 100 ml, 250 ml, and 500 ml. Easy to handle and clean after use. Great for schools, colleges, science fairs, and laboratories. Export-quality flask designed for both students and professionals."
+    },
+    {
+      "id": 111,
+      "categoryId": 1,
+      "name": "Conical Flask – Polypropylene",
+      "priceRange": "₹25 – ₹100",
+      "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg",
+      "variants": [
+        { "id": 1011, "sku": "BE-100", "price": 25, "stock": 50, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 1012, "sku": "BE-250", "price": 50, "stock": 40, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 1013, "sku": "BE-500", "price": 100, "stock": 30, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ],
+      "description": "Manikarn Polypropylene Conical Flask – Strong, Leakproof & Easy to Use Made from high-quality polypropylene, this conical flask is durable and safe for lab use. <br> Perfect for mixing, cooling, dissolving, or holding liquids and chemical solutions. It can be used in experiments for collecting, measuring, or storing samples. Comes with a screw cap to prevent leaks and keep contents clean and safe. <br>Sizes available: 100 ml, 250 ml, and 500 ml. Easy to handle and clean after use. Great for schools, colleges, science fairs, and laboratories. Export-quality flask designed for both students and professionals."
+    },
+    {
+      "id": 112,
+      "categoryId": 1,
+      "name": "Conical Flask – Polypropylene",
+      "priceRange": "₹25 – ₹100",
+      "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg",
+      "variants": [
+        { "id": 1011, "sku": "BE-100", "price": 25, "stock": 50, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 1012, "sku": "BE-250", "price": 50, "stock": 40, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 1013, "sku": "BE-500", "price": 100, "stock": 30, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ],
+      "description": "Manikarn Polypropylene Conical Flask – Strong, Leakproof & Easy to Use Made from high-quality polypropylene, this conical flask is durable and safe for lab use. <br> Perfect for mixing, cooling, dissolving, or holding liquids and chemical solutions. It can be used in experiments for collecting, measuring, or storing samples. Comes with a screw cap to prevent leaks and keep contents clean and safe. <br>Sizes available: 100 ml, 250 ml, and 500 ml. Easy to handle and clean after use. Great for schools, colleges, science fairs, and laboratories. Export-quality flask designed for both students and professionals."
+    },
+    {
+      "id": 102,
+      "categoryId": 1,
+      "name": "Conical Flask",
+      "priceRange": "₹45 – ₹200",
+      "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg",
+      
+      "variants": [
+        { "id": 1021, "sku": "CF-100", "price": 45, "stock": 60, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 1022, "sku": "CF-250", "price": 90, "stock": 40, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 1023, "sku": "CF-500", "price": 200, "stock": 25, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ]
+    },
+    {
+      "id": 113,
+      "categoryId": 1,
+      "name": "Conical Flask",
+      "priceRange": "₹45 – ₹200",
+      "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg",
+      
+      "variants": [
+        { "id": 1021, "sku": "CF-100", "price": 45, "stock": 60, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 1022, "sku": "CF-250", "price": 90, "stock": 40, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 1023, "sku": "CF-500", "price": 200, "stock": 25, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ]
+    },
+    {
+      "id": 114,
+      "categoryId": 1,
+      "name": "Conical Flask",
+      "priceRange": "₹45 – ₹200",
+      "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg",
+      
+      "variants": [
+        { "id": 1021, "sku": "CF-100", "price": 45, "stock": 60, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 1022, "sku": "CF-250", "price": 90, "stock": 40, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 1023, "sku": "CF-500", "price": 200, "stock": 25, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ]
+    },
+
+    {
+      "id": 201,
+      "categoryId": 2,
+      "name": "Plastic Beaker",
+      "priceRange": "₹20 – ₹80",
+      "image": "https://manikarn.com/wp-content/uploads/2025/01/scdf-1.jpg",
+      "variants": [
+        { "id": 2011, "sku": "PB-100", "price": 20, "stock": 60, "attributes": [{ "name": "Capacity", "value": "100 ml" }] },
+        { "id": 2012, "sku": "PB-250", "price": 40, "stock": 45, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 2013, "sku": "PB-500", "price": 80, "stock": 30, "attributes": [{ "name": "Capacity", "value": "500 ml" }] }
+      ]
+    },
+    {
+      "id": 202,
+      "categoryId": 2,
+      "name": "Plastic Measuring Jar",
+      "priceRange": "₹30 – ₹120",
+      "image": "/images/products/plastic-jar.jpg",
+      "variants": [
+        { "id": 2021, "sku": "PJ-250", "price": 30, "stock": 50, "attributes": [{ "name": "Capacity", "value": "250 ml" }] },
+        { "id": 2022, "sku": "PJ-500", "price": 70, "stock": 35, "attributes": [{ "name": "Capacity", "value": "500 ml" }] },
+        { "id": 2023, "sku": "PJ-1L", "price": 120, "stock": 20, "attributes": [{ "name": "Capacity", "value": "1 L" }] }
+      ]
+    },
+
+    {
+      "id": 301,
+      "categoryId": 3,
+      "name": "Mini Centrifuge",
+      "priceRange": "₹18,000 – ₹25,000",
+      "image": "/images/products/mini-centrifuge.jpg",
+      "variants": [
+        { "id": 3011, "sku": "MC-6000", "price": 18000, "stock": 10, "attributes": [{ "name": "Speed", "value": "6000 RPM" }] },
+        { "id": 3012, "sku": "MC-8000", "price": 22000, "stock": 7, "attributes": [{ "name": "Speed", "value": "8000 RPM" }] },
+        { "id": 3013, "sku": "MC-10000", "price": 25000, "stock": 5, "attributes": [{ "name": "Speed", "value": "10000 RPM" }] }
+      ]
+    },
+    {
+      "id": 302,
+      "categoryId": 3,
+      "name": "High Speed Centrifuge",
+      "priceRange": "₹45,000 – ₹85,000",
+      "image": "/images/products/highspeed-centrifuge.jpg",
+      "variants": [
+        { "id": 3021, "sku": "HSC-12000", "price": 45000, "stock": 6, "attributes": [{ "name": "Speed", "value": "12000 RPM" }] },
+        { "id": 3022, "sku": "HSC-15000", "price": 62000, "stock": 4, "attributes": [{ "name": "Speed", "value": "15000 RPM" }] },
+        { "id": 3023, "sku": "HSC-18000", "price": 85000, "stock": 2, "attributes": [{ "name": "Speed", "value": "18000 RPM" }] }
+      ]
+    },
+
+    {
+      "id": 401,
+      "categoryId": 4,
+      "name": "Optics Kit",
+      "priceRange": "₹2,000 – ₹4,000",
+      "image": "/images/products/optics-kit.jpg",
+      "variants": [
+        { "id": 4011, "sku": "OK-BASIC", "price": 2000, "stock": 15, "attributes": [{ "name": "Level", "value": "Basic" }] },
+        { "id": 4012, "sku": "OK-STANDARD", "price": 3000, "stock": 10, "attributes": [{ "name": "Level", "value": "Standard" }] },
+        { "id": 4013, "sku": "OK-ADV", "price": 4000, "stock": 5, "attributes": [{ "name": "Level", "value": "Advanced" }] }
+      ]
+    },
+    {
+      "id": 402,
+      "categoryId": 4,
+      "name": "Electric Circuit Board",
+      "priceRange": "₹1,200 – ₹2,500",
+      "image": "/images/products/circuit-board.jpg",
+      "variants": [
+        { "id": 4021, "sku": "ECB-BASIC", "price": 1200, "stock": 20 },
+        { "id": 4022, "sku": "ECB-MED", "price": 1800, "stock": 15 },
+        { "id": 4023, "sku": "ECB-PRO", "price": 2500, "stock": 10 }
+      ]
+    },
+
+    {
+      "id": 501,
+      "categoryId": 5,
+      "name": "Tablet Dissolution Apparatus",
+      "priceRange": "₹85,000 – ₹1,40,000",
+      "image": "/images/products/dissolution.jpg",
+      "variants": [
+        { "id": 5011, "sku": "TD-6", "price": 85000, "stock": 3 },
+        { "id": 5012, "sku": "TD-8", "price": 120000, "stock": 2 },
+        { "id": 5013, "sku": "TD-12", "price": 140000, "stock": 1 }
+      ]
+    },
+    {
+      "id": 502,
+      "categoryId": 5,
+      "name": "Disintegration Tester",
+      "priceRange": "₹45,000 – ₹70,000",
+      "image": "/images/products/disintegration.jpg",
+      "variants": [
+        { "id": 5021, "sku": "DT-2", "price": 45000, "stock": 4 },
+        { "id": 5022, "sku": "DT-4", "price": 58000, "stock": 3 },
+        { "id": 5023, "sku": "DT-6", "price": 70000, "stock": 2 }
+      ]
+    },
+
+    {
+      "id": 601,
+      "categoryId": 6,
+      "name": "Compound Microscope",
+      "priceRange": "₹8,000 – ₹15,000",
+      "image": "/images/products/compound-microscope.jpg",
+      "variants": [
+        { "id": 6011, "sku": "CM-40X", "price": 8000, "stock": 12 },
+        { "id": 6012, "sku": "CM-100X", "price": 12000, "stock": 8 },
+        { "id": 6013, "sku": "CM-400X", "price": 15000, "stock": 5 }
+      ]
+    },
+    {
+      "id": 602,
+      "categoryId": 6,
+      "name": "Stereo Microscope",
+      "priceRange": "₹18,000 – ₹30,000",
+      "image": "/images/products/stereo-microscope.jpg",
+      "variants": [
+        { "id": 6021, "sku": "SM-10X", "price": 18000, "stock": 6 },
+        { "id": 6022, "sku": "SM-20X", "price": 24000, "stock": 4 },
+        { "id": 6023, "sku": "SM-40X", "price": 30000, "stock": 2 }
+      ]
+    },
+
+    {
+      "id": 701,
+      "categoryId": 7,
+      "name": "Test Sieve Set",
+      "priceRange": "₹2,500 – ₹12,000",
+      "image": "/images/products/sieve-set.jpg",
+      "variants": [
+        { "id": 7011, "sku": "TS-200", "price": 2500, "stock": 20 },
+        { "id": 7012, "sku": "TS-300", "price": 6000, "stock": 15 },
+        { "id": 7013, "sku": "TS-450", "price": 12000, "stock": 8 }
+      ]
+    },
+    {
+      "id": 702,
+      "categoryId": 7,
+      "name": "Air Jet Sieve",
+      "priceRange": "₹1,20,000 – ₹1,80,000",
+      "image": "/images/products/air-jet-sieve.jpg",
+      "variants": [
+        { "id": 7021, "sku": "AJ-STD", "price": 120000, "stock": 3 },
+        { "id": 7022, "sku": "AJ-PRO", "price": 150000, "stock": 2 },
+        { "id": 7023, "sku": "AJ-ADV", "price": 180000, "stock": 1 }
+      ]
+    },
+
+    {
+      "id": 801,
+      "categoryId": 8,
+      "name": "Human Skeleton Model",
+      "priceRange": "₹4,000 – ₹9,000",
+      "image": "/images/products/skeleton.jpg",
+      "variants": [
+        { "id": 8011, "sku": "HS-2FT", "price": 4000, "stock": 10 },
+        { "id": 8012, "sku": "HS-4FT", "price": 6500, "stock": 6 },
+        { "id": 8013, "sku": "HS-5FT", "price": 9000, "stock": 4 }
+      ]
+    },
+    {
+      "id": 802,
+      "categoryId": 8,
+      "name": "Human Heart Model",
+      "priceRange": "₹1,500 – ₹3,000",
+      "image": "/images/products/heart-model.jpg",
+      "variants": [
+        { "id": 8021, "sku": "HM-BASIC", "price": 1500, "stock": 20 },
+        { "id": 8022, "sku": "HM-MED", "price": 2200, "stock": 15 },
+        { "id": 8023, "sku": "HM-ADV", "price": 3000, "stock": 8 }
+      ]
+    },
+
+    {
+      "id": 901,
+      "categoryId": 9,
+      "name": "Geometry Box",
+      "priceRange": "₹150 – ₹350",
+      "image": "/images/products/geometry-box.jpg",
+      "variants": [
+        { "id": 9011, "sku": "GB-SCHOOL", "price": 150, "stock": 50 },
+        { "id": 9012, "sku": "GB-STUDENT", "price": 250, "stock": 40 },
+        { "id": 9013, "sku": "GB-PRO", "price": 350, "stock": 30 }
+      ]
+    },
+    {
+      "id": 902,
+      "categoryId": 9,
+      "name": "Algebra Learning Kit",
+      "priceRange": "₹500 – ₹1,200",
+      "image": "/images/products/algebra-kit.jpg",
+      "variants": [
+        { "id": 9021, "sku": "AK-BASIC", "price": 500, "stock": 25,  "attributes": [{ "name": "Speed", "value": "12000 RPM" }]   },
+        { "id": 9022, "sku": "AK-MED", "price": 800, "stock": 20 },
+        { "id": 9023, "sku": "AK-ADV", "price": 1200, "stock": 15 }
+      ]
+    },
+
+    {
+      "id": 1001,
+      "categoryId": 10,
+      "name": "Vernier Caliper",
+      "priceRange": "₹800 – ₹2,000",
+      "image": "/images/products/vernier.jpg",
+      "variants": [
+        { "id": 10011, "sku": "VC-150", "price": 800, "stock": 25 },
+        { "id": 10012, "sku": "VC-200", "price": 1400, "stock": 18 },
+        { "id": 10013, "sku": "VC-DIG", "price": 2000, "stock": 10 }
+      ]
+    },
+    {
+      "id": 1002,
+      "categoryId": 10,
+      "name": "Digital Multimeter",
+      "priceRange": "₹1,200 – ₹3,500",
+      "image": "/images/products/multimeter.jpg",
+      "variants": [
+        { "id": 10021, "sku": "DM-BASIC", "price": 1200, "stock": 20 },
+        { "id": 10022, "sku": "DM-PRO", "price": 2200, "stock": 15 },
+        { "id": 10023, "sku": "DM-IND", "price": 3500, "stock": 8 }
+      ]
+    }
+  ]
+}
