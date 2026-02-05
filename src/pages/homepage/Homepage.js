@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import './Homepage.css'
-import main2 from '../../assets/main2.png'
+import main3 from '../../assets/main3.png'
 import about from '../../assets/about.jpg'
 import { useNavigate } from 'react-router-dom';
 import { api, API_BASE } from "../../api";
+import FloatingVideo from '../../components/FloatingVideo/FloatingVideo';
 
 const Homepage = () => {
     const navigate = useNavigate();
@@ -24,17 +25,22 @@ const Homepage = () => {
 
                     <div className="lab-banner-content">
                         <h1>RK Industries</h1>
-                        <p className="subtitle">Trusted Lab Equipment & Scientific Solutions Provider</p>
+                        <p className="subtitle">Trusted Lab Equipment & Scientific Solutions Manufacturer</p>
 
                         <p className="description">
-                            RK Industries is a leading supplier of high-quality laboratory equipment,
+                            RK Industries is a leading manufacturer of high-quality laboratory equipment,
                             analytical instruments, Civil lab equipments and scientific solutions for research labs,
                             hospitals, educational institutes, and industries across India.
                             We focus on precision, reliability, and long-term service support.
                         </p>
 
                         <div className="lab-banner-actions">
-                            <a href="/about" className="btn primary">know more About Us</a>
+                            <button 
+                                onClick={() => navigate('/about')} 
+                                className="btn primary"
+                            >
+                                know more About Us
+                            </button>
                             <a 
                                 href="#our-products" 
                                 className="btn secondary"
@@ -52,7 +58,7 @@ const Homepage = () => {
                     </div>
 
                     <div className="lab-banner-image">
-                        <img src={main2} alt="Laboratory Equipment" />
+                        <img src={main3} alt="Laboratory Equipment" />
                     </div>
 
                 </div>
@@ -138,12 +144,19 @@ const Homepage = () => {
                             after-sales support.
                         </p>
 
-                        <a href="/about-us" className="about-btn">Know More</a>
+                        <button 
+                            onClick={() => navigate('/about')} 
+                            className="about-btn"
+                        >
+                            Know More
+                        </button>
                     </div>
 
                 </div>
             </section>
 
+            {/* Floating Video */}
+            <FloatingVideo videoUrl="https://www.youtube.com/watch?si=AjrDAJA9L3tIcwE_&v=4B186pmG3Y4&feature=youtu.be" />
             
         </>
     )

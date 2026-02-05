@@ -1,3 +1,11 @@
+/* HEADER WRAPPER - STICKY */
+.header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #fff;
+}
+
 /* TOP BAR */
 .top-bar {
   background: linear-gradient(135deg, #00ACEE 0%, #0284c7 100%);

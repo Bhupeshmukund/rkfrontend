@@ -3,6 +3,9 @@ import './Footer.css'
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import logo from '../../assets/logo.png';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faInstagram, faFacebook, faYoutube } from '@fortawesome/free-brands-svg-icons';
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 
 const Footer = () => {
     const [categories, setCategories] = useState([]);
@@ -47,6 +50,20 @@ const Footer = () => {
                         <Link to="/" className="footer-logo-link" onClick={handleLinkClick}>
                             <img src={logo} alt="RK Industries" className="footer-logo" />
                         </Link>
+                        <div className="social-media-icons">
+                            <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram">
+                                <FontAwesomeIcon icon={faInstagram} />
+                            </a>
+                            <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Facebook">
+                                <FontAwesomeIcon icon={faFacebook} />
+                            </a>
+                            <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="YouTube">
+                                <FontAwesomeIcon icon={faYoutube} />
+                            </a>
+                            <a href="mailto:rkindustriesexports@gmail.com" className="social-icon" aria-label="Email">
+                                <FontAwesomeIcon icon={faEnvelope} />
+                            </a>
+                        </div>
                     </div>
 
                     <div className="footer-col">
@@ -93,7 +110,7 @@ const Footer = () => {
                             <li>📞 +91-8685933785</li>
                             <li>✉️ rkindustriesexports@gmail.com</li>
                             <li>
-                                📍 MADHUBAN COLONY , JAGADHRI, MADHUBAN COLONY , TEJLI GATE, MANAN INTERNATIONAL, Jagadhri, Yamunanagar, Yamunanagar, Haryana, 135003
+                                📍 MADHUBAN COLONY, Jagadhri, Yamunanagar, Haryana, 135003
                             </li>
                         </ul>
                     </div>

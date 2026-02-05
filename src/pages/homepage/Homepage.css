@@ -1,6 +1,6 @@
 .lab-banner {
   position: relative;
-  min-height: 80vh;
+  min-height: 61vh;
   display: flex;
   align-items: center;
   background-image: url("../../assets/main-background.png");
@@ -19,16 +19,17 @@
 
 /* Inner container */
 .lab-banner-inner {
-position: relative;
-    z-index: 2;
-    width: 100%;
-    /* max-width: 1200px; */
-    margin: auto;
-    padding: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 40px;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 60px 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  box-sizing: border-box;
 }
 
 /* Left text */
@@ -40,6 +41,8 @@ position: relative;
 .lab-banner-content h1 {
   font-size: 48px;
   margin-bottom: 12px;
+  line-height: 1.2;
+  word-wrap: break-word;
 }
 
 .subtitle {
@@ -67,6 +70,14 @@ position: relative;
   font-weight: 600;
   text-decoration: none;
   transition: 0.3s ease;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .btn.primary {
@@ -96,9 +107,20 @@ position: relative;
 }
 
 /* Responsive */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
   .lab-banner-inner {
-    padding: 80px 60px;
+    max-width: 100%;
+    padding: 60px 80px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .lab-banner {
+    min-height: 65vh;
+  }
+
+  .lab-banner-inner {
+    padding: 50px 60px;
     gap: 30px;
   }
 
@@ -109,15 +131,20 @@ position: relative;
   .subtitle {
     font-size: 18px;
   }
+
+  .lab-banner-image img {
+    max-height: 450px;
+  }
 }
 
 @media (max-width: 992px) {
   .lab-banner {
-    min-height: 70vh;
+    min-height: auto;
+    padding: 40px 0;
   }
 
   .lab-banner-inner {
-    padding: 60px 40px;
+    padding: 50px 40px;
     gap: 30px;
   }
 
@@ -141,14 +168,18 @@ position: relative;
 @media (max-width: 900px) {
   .lab-banner {
     min-height: auto;
-    padding: 40px 0;
+    padding: 30px 0;
   }
 
   .lab-banner-inner {
     flex-direction: column-reverse;
-    /* text-align: center; */
-    padding: 50px 30px;
-    gap: 30px;
+    padding: 40px 30px;
+    gap: 25px;
+  }
+
+  .lab-banner-content {
+    text-align: center;
+    width: 100%;
   }
 
   .lab-banner-content h1 {
@@ -164,90 +195,160 @@ position: relative;
   .description {
     font-size: 14px;
     margin-bottom: 25px;
+    max-width: 100%;
   }
 
   .lab-banner-actions {
     justify-content: center;
     flex-wrap: wrap;
+    gap: 12px;
   }
 
   .btn {
     padding: 12px 22px;
     font-size: 14px;
+    flex: 0 1 auto;
+    min-width: 160px;
   }
 
   .lab-banner-image {
     justify-content: center;
     width: 100%;
+    flex: none;
   }
 
   .lab-banner-image img {
     max-height: 350px;
+    max-width: 100%;
     padding: 15px;
+    width: auto;
   }
 }
 
 @media (max-width: 768px) {
+  .lab-banner {
+    min-height: auto;
+    padding: 20px 0;
+  }
+
   .lab-banner-inner {
-    padding: 40px 25px;
+    padding: 30px 25px;
+    gap: 20px;
   }
 
   .lab-banner-content h1 {
     font-size: 28px;
+    margin-bottom: 8px;
   }
 
   .subtitle {
     font-size: 15px;
+    margin-bottom: 12px;
   }
 
   .description {
     font-size: 13px;
     line-height: 1.6;
+    margin-bottom: 20px;
   }
 
   .lab-banner-actions {
     flex-direction: column;
     width: 100%;
+    gap: 10px;
   }
 
   .btn {
-    width: 90%;
+    width: 100%;
+    max-width: 280px;
     text-align: center;
     padding: 14px 20px;
+    margin: 0 auto;
+  }
+
+  .lab-banner-image {
+    width: 100%;
   }
 
   .lab-banner-image img {
     max-height: 280px;
+    max-width: 100%;
     padding: 10px;
+    width: auto;
+    height: auto;
   }
 }
 
 @media (max-width: 480px) {
+  .lab-banner {
+    min-height: auto;
+    padding: 15px 0;
+  }
+
   .lab-banner-inner {
-    padding: 30px 20px;
-    gap: 25px;
+    padding: 25px 20px;
+    gap: 20px;
   }
 
   .lab-banner-content h1 {
     font-size: 24px;
+    margin-bottom: 8px;
   }
 
   .subtitle {
     font-size: 14px;
+    margin-bottom: 10px;
   }
 
   .description {
-    font-size: 13px;
-    margin-bottom: 20px;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  .lab-banner-actions {
+    gap: 8px;
   }
 
   .btn {
     padding: 12px 18px;
     font-size: 13px;
+    max-width: 100%;
   }
 
   .lab-banner-image img {
-    max-height: 240px;
+    max-height: 220px;
+    max-width: 100%;
+    padding: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .lab-banner-inner {
+    padding: 20px 15px;
+    gap: 15px;
+  }
+
+  .lab-banner-content h1 {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+  }
+
+  .description {
+    font-size: 12px;
+    margin-bottom: 15px;
+  }
+
+  .btn {
+    padding: 11px 16px;
+    font-size: 12px;
+  }
+
+  .lab-banner-image img {
+    max-height: 200px;
   }
 }
 
@@ -345,6 +446,14 @@ position: relative;
   font-weight: 600;
   margin-top: 20px;
   transition: background 0.3s;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.about-btn:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .about-btn:hover {
@@ -511,7 +620,7 @@ position: relative;
 
 .our-products {
   position: relative;
-  padding: 100px 40px;
+  padding:  40px;
   background-image: url("../../assets//product-background.jpg");
   background-size: cover;
   background-position: center;

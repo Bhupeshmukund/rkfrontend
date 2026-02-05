@@ -185,7 +185,7 @@ const Header = () => {
     };
 
     return (
-        <>
+        <div className="header-wrapper">
             <div className="top-bar">
                 <div className="top-left">
                     <div className="contact-item">
@@ -409,7 +409,7 @@ const Header = () => {
                     </div>
                 </Link>
             )}
-            </>
+        </div>
     )
 }
 

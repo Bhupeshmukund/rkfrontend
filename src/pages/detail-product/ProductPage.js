@@ -1,5 +1,6 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import "./ProductPage.css";
 import { api, API_BASE } from "../../api";
 import { addToCart } from "../../utils/cart";
@@ -13,7 +14,7 @@ const ProductDetails = () => {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedAttributes, setSelectedAttributes] = useState({}); // Track selected attribute values
   const [qty, setQty] = useState(1);
-  const [tab] = useState("description");
+  const [tab, setTab] = useState("description");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -86,6 +87,7 @@ const ProductDetails = () => {
     };
   }, [id]);
 
+
   if (loading) {
     return <h2 style={{ padding: "40px" }}>Loading...</h2>;
   }
@@ -127,6 +129,52 @@ const ProductDetails = () => {
       ? imagePath
       : `${API_BASE}${imagePath}`;
 
+  // Process HTML content to fix image URLs
+  const processHtmlContent = (html) => {
+    if (!html) return html;
+    
+    // Use regex to find and replace img src attributes
+    return html.replace(/<img([^>]*)\ssrc=["']([^"']+)["']([^>]*)>/gi, (match, before, src, after) => {
+      // If it's already an absolute URL, keep it
+      if (src.startsWith('http://') || src.startsWith('https://')) {
+        return match;
+      }
+      
+      let newSrc = src;
+      
+      // If it starts with /backend, convert to absolute URL
+      if (src.startsWith('/backend')) {
+        if (process.env.NODE_ENV === 'production') {
+          const protocol = window.location.protocol;
+          const host = window.location.host;
+          newSrc = `${protocol}//${host}${src}`;
+        } else {
+          newSrc = `${API_BASE}${src}`;
+        }
+      } else if (src.startsWith('/uploads')) {
+        // Handle /uploads paths - add /backend prefix
+        if (process.env.NODE_ENV === 'production') {
+          const protocol = window.location.protocol;
+          const host = window.location.host;
+          newSrc = `${protocol}//${host}/backend${src}`;
+        } else {
+          newSrc = `${API_BASE}${src}`;
+        }
+      } else if (!src.startsWith('http') && !src.startsWith('data:')) {
+        // Relative path - convert to absolute
+        if (process.env.NODE_ENV === 'production') {
+          const protocol = window.location.protocol;
+          const host = window.location.host;
+          newSrc = `${protocol}//${host}/backend${src.startsWith('/') ? '' : '/'}${src}`;
+        } else {
+          newSrc = `${API_BASE}${src.startsWith('/') ? '' : '/'}${src}`;
+        }
+      }
+      
+      return `<img${before} src="${newSrc}"${after}>`;
+    });
+  };
+
 
 
   const handleDecreaseQty = () => {
@@ -166,12 +214,23 @@ const ProductDetails = () => {
   // Prepare variants with attributes as a plain object for matcher utilities
   const variantsWithAttrs = normalizedVariants.map(v => ({ ...v, attributes: v.attributesObj }));
 
-  // When all attributes are selected, try to find an exact variant match
-  // We use matcher utilities for consistent behavior across UI and tests
-  // (findExactVariant returns null if no exact match for the provided selection)
-  // FindNearest handles partial selections and prefers last-changed attribute
+  // Check if current selection is valid (exact match exists)
+  const isCurrentSelectionValid = () => {
+    if (!selectedAttributes || Object.keys(selectedAttributes).length === 0) {
+      return false;
+    }
+    // Check if all attributes are selected
+    const allSelected = attributeNames.length > 0 && attributeNames.every(k => selectedAttributes[k]);
+    if (!allSelected) {
+      return false;
+    }
+    // Check if exact variant exists
+    const exact = findExactVariant(selectedAttributes, variantsWithAttrs);
+    return exact !== null;
+  };
 
   // Handler invoked when user changes any attribute dropdown
+  // Users can select any combination - we just check if it's available
   const onAttributeChange = (attrName, value) => {
     // Update selection state; empty/cleared values remove the key
     const updated = { ...selectedAttributes };
@@ -181,26 +240,18 @@ const ProductDetails = () => {
     setSelectedAttributes(updated);
     setLastChangedAttribute(attrName);
 
-    // If user selected all attributes, try exact match first
+    // Check if the updated selection is valid
     const allSelected = attributeNames.length > 0 && attributeNames.every(k => updated[k]);
     if (allSelected) {
       const exact = findExactVariant(updated, variantsWithAttrs);
       if (exact) {
+        // Update selectedVariant if exact match found
         setSelectedVariant(exact);
-        setSelectedAttributes(normalizedSelectionFromVariant(exact));
         return;
       }
     }
 
-    // No exact match / partial selection -> pick nearest variant while preserving last-changed attr
-    const nearest = findNearestVariant(updated, variantsWithAttrs, attrName);
-    if (nearest) {
-      setSelectedVariant(nearest);
-      setSelectedAttributes(normalizedSelectionFromVariant(nearest));
-      return;
-    }
-
-    // As a final fallback, clear selected variant (should be rare if variants exist)
+    // If no exact match, clear selectedVariant but keep the user's selections
     setSelectedVariant(null);
   };
 
@@ -211,9 +262,10 @@ const ProductDetails = () => {
       return;
     }
 
-    // Stock is informational only; allow adding even when stock <= 0
+    // Block adding out-of-stock items
     if (selectedVariant.stock !== undefined && Number(selectedVariant.stock) <= 0) {
-      console.debug('Adding out-of-stock variant to cart (stock informational):', selectedVariant);
+      console.warn('Cannot add out-of-stock variant to cart');
+      return;
     }
 
     setAddingToCart(true);
@@ -242,6 +294,10 @@ const ProductDetails = () => {
     console.debug('Adding to cart:', cartItem);
 
     addToCart(cartItem);
+    toast.success("Product added to cart!", {
+      position: "top-right",
+      autoClose: 3000,
+    });
 
     setQty(1);
     setTimeout(() => setAddingToCart(false), 500);
@@ -289,64 +345,89 @@ const ProductDetails = () => {
             {selectedVariant ? `₹${selectedVariant.price}` : "Select options"}
           </p>
 
+          {/* OUT OF STOCK INDICATOR */}
+          {selectedVariant && Number(selectedVariant.stock) === 0 && (
+            <p className="out-of-stock" style={{ color: 'red', fontWeight: 600, marginTop: '-15px', marginBottom: '10px' }}>
+              Out of Stock
+            </p>
+          )}
+
           {/* SELECTED VARIANT DETAILS (moved above cart) */}
-          {selectedVariant && (
+          {/* Always show dropdowns when there are attributes, even if selection is invalid */}
+          {attributeNames.length > 0 ? (
             <div className="selected-variant-info">
               <h3 className="variant-info-title">Selected Variant Details</h3>
               <div className="variant-attributes-list">
-                {attributeNames.length > 0 ? (
-                  attributeNames.map((name) => {
-                    const opts = allOptions[name] || [];
-                    const single = opts.length === 1;
-                    const displayValue = selectedAttributes[name] || (single ? opts[0] : '');
-                    return (
-                      <div key={name} className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
-                        <span className="variant-attribute-name">{name}:</span>
-                        {single ? (
-                          <span className="variant-attribute-value">{displayValue}</span>
-                        ) : (
-                          <select value={selectedAttributes[name] || ''} onChange={e => onAttributeChange(name, e.target.value)}>
-                            <option value="">Select {name}</option>
-                            {opts.map(opt => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  product.variants && product.variants.length > 1 ? (
-                    <div className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
-                      <span className="variant-attribute-name">Variant:</span>
-                      <select value={selectedVariant?.id || ''} onChange={e => {
-                        const v = product.variants.find(vv => vv.id === Number(e.target.value));
-                        setSelectedVariant(v || null);
-                        setSelectedAttributes(v ? (v.attributesObj || {}) : {});
-                      }}>
-                        {product.variants.map(v => (
-                          <option key={v.id} value={v.id}>{v.sku || `Variant ${v.id}`} — ₹{v.price}</option>
-                        ))}
-                      </select>
+                {attributeNames.map((name) => {
+                  const opts = allOptions[name] || [];
+                  const single = opts.length === 1;
+                  const displayValue = selectedAttributes[name] || (single ? opts[0] : '');
+                  return (
+                    <div key={name} className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
+                      <span className="variant-attribute-name">{name}:</span>
+                      {single ? (
+                        <span className="variant-attribute-value">{displayValue}</span>
+                      ) : (
+                        <select value={selectedAttributes[name] || ''} onChange={e => onAttributeChange(name, e.target.value)}>
+                          <option value="">Select {name}</option>
+                          {opts.map(opt => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
-                  ) : (
-                    (() => {
-                      const attrMap = selectedVariant.attributes || {};
-                      return Object.keys(attrMap).map((name, index) => (
-                        <div key={index} className="variant-attribute-item">
-                          <span className="variant-attribute-name">{name}:</span>
-                          <span className="variant-attribute-value">{attrMap[name]}</span>
-                        </div>
-                      ));
-                    })()
-                  )
-                )}
-
-
+                  );
+                })}
               </div>
             </div>
-          )} 
+          ) : (
+            // Fallback for products without attributes but with multiple variants
+            product.variants && product.variants.length > 1 && selectedVariant && (
+              <div className="selected-variant-info">
+                <h3 className="variant-info-title">Selected Variant Details</h3>
+                <div className="variant-attributes-list">
+                  <div className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
+                    <span className="variant-attribute-name">Variant:</span>
+                    <select value={selectedVariant?.id || ''} onChange={e => {
+                      const v = product.variants.find(vv => vv.id === Number(e.target.value));
+                      setSelectedVariant(v || null);
+                      setSelectedAttributes(v ? (v.attributesObj || {}) : {});
+                    }}>
+                      {product.variants.map(v => (
+                        <option key={v.id} value={v.id}>{v.sku || `Variant ${v.id}`} — ₹{v.price}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )
+          )}
 
+          {/* SELECTION SUMMARY */}
+          {attributeNames.length > 0 && Object.keys(selectedAttributes).length > 0 && (
+            <div className="selection-summary">
+              <h4 className="selection-summary-title">Selected Combination:</h4>
+              <div className="selection-combination">
+                {attributeNames.map((name, idx) => {
+                  const value = selectedAttributes[name];
+                  if (!value) return null;
+                  return (
+                    <span key={name} className="combination-item">
+                      {value}{idx < attributeNames.length - 1 ? ' • ' : ''}
+                    </span>
+                  );
+                })}
+                {isCurrentSelectionValid() ? (
+                  <span className="availability-badge available">✔ Available</span>
+                ) : (
+                  <span className="availability-badge unavailable">✖ Not Available</span>
+                )}
+              </div>
+
+            </div>
+          )}
 
           {/* CART */}
           <div className="cart-row">
@@ -382,58 +463,81 @@ const ProductDetails = () => {
             <button 
               className="add-cart-btn" 
               onClick={handleAddToCart}
-              disabled={ addingToCart || !selectedVariant }
+              disabled={ 
+                addingToCart || 
+                !selectedVariant || 
+                (selectedVariant && selectedVariant.stock !== undefined && Number(selectedVariant.stock) <= 0)
+              }
             >
-              {addingToCart ? "ADDING..." : (selectedVariant ? "ADD TO CART" : "Select options")}
+              {addingToCart 
+                ? "ADDING..." 
+                : (!selectedVariant 
+                  ? "Select options" 
+                  : (selectedVariant.stock !== undefined && Number(selectedVariant.stock) <= 0)
+                    ? "OUT OF STOCK"
+                    : "ADD TO CART"
+                  )
+              }
             </button> 
           </div>
 
 
 
-          {/* TABS */}
-          {/* <div className="product-tabs">
-            <button
-              className={tab === "description" ? "active" : ""}
-              onClick={() => setTab("description")}
-            >
-              DESCRIPTION
-            </button>
-            <button
-              className={tab === "info" ? "active" : ""}
-              onClick={() => setTab("info")}
-            >
-              ADDITIONAL INFORMATION
-            </button>
-          </div> */}
-
-          {/* TAB CONTENT */}
-          <div className="tab-content">
-            {tab === "description" && (
-              <>
-                <div
-                  className="product-description scroll-box"
-                  dangerouslySetInnerHTML={{
-                    __html: product.description || "<p>No description available.</p>"
-                  }}
-                />
-              </>
-            )}
-
-
-             
-            {/* {tab === "info" && (
-              <ul>
-                {product.variants.map(v => (
-                  <li key={v.id}>
-                    <strong>{v.sku}</strong> — ₹{v.price} (
-                    {v.attributes?.map(a => `${a.name}: ${a.value}`).join(", ")})
-                  </li>
-                ))}
-              </ul>
-            )}  */}
-          </div>
         </div>
 
+      </div>
+
+      {/* TABS SECTION - Below product info */}
+      <div className="product-tabs-section">
+        <div className="product-tabs">
+          <button
+            className={tab === "description" ? "active" : ""}
+            onClick={() => setTab("description")}
+          >
+            DESCRIPTION
+          </button>
+          <button
+            className={tab === "info" ? "active" : ""}
+            onClick={() => setTab("info")}
+          >
+            ADDITIONAL INFORMATION
+          </button>
+        </div>
+
+        {/* TAB CONTENT */}
+        <div className="tab-content">
+          {tab === "description" && (
+            <div className="tab-panel">
+              <h3 className="tab-panel-title">DESCRIPTION</h3>
+              <div
+                className="product-description"
+                dangerouslySetInnerHTML={{
+                  __html: processHtmlContent(product.description) || "<p>No description available.</p>"
+                }}
+              />
+            </div>
+          )}
+
+          {tab === "info" && (
+            <div className="tab-panel">
+              <h3 className="tab-panel-title">ADDITIONAL INFORMATION</h3>
+              
+              {/* Additional Description */}
+              {product.additionalDescription ? (
+                <div className="additional-description-content">
+                  <div
+                    className="additional-description"
+                    dangerouslySetInnerHTML={{
+                      __html: processHtmlContent(product.additionalDescription)
+                    }}
+                  />
+                </div>
+              ) : (
+                <p className="no-info">No additional information available.</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
 

@@ -4,7 +4,7 @@ import "./AdminPanel.css";
 import { api, API_BASE } from "../../api";
 import { Editor } from "@tinymce/tinymce-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faEdit, faPlus, faSearch, faBox, faList, faReceipt, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faEdit, faPlus, faSearch, faBox, faList, faReceipt, faCheck, faTimes, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 const TINYMCE_KEY =
   process.env.REACT_APP_TINYMCE_API_KEY ||
@@ -30,6 +30,7 @@ const AdminPanel = () => {
     categoryName: "",
     name: "",
     description: "",
+    additionalDescription: "",
     image: null
   });
   const [variants, setVariants] = useState([buildEmptyVariant()]);
@@ -572,6 +573,7 @@ const AdminPanel = () => {
       formData.append("categoryName", productForm.categoryName);
       formData.append("productName", productForm.name);
       formData.append("description", productForm.description);
+      formData.append("additionalDescription", productForm.additionalDescription || "");
       formData.append("image", productForm.image);
       (galleryFiles || []).forEach(file => {
         formData.append("gallery", file);
@@ -616,6 +618,7 @@ const AdminPanel = () => {
         categoryName: "",
         name: "",
         description: "",
+        additionalDescription: "",
         image: null
       });
       setVariants([buildEmptyVariant()]);
@@ -816,6 +819,7 @@ const AdminPanel = () => {
         categoryName: product.categoryName || "",
         name: product.name || "",
         description: product.description || "",
+        additionalDescription: product.additionalDescription || "",
         image: null
       });
 
@@ -899,6 +903,7 @@ const AdminPanel = () => {
       formData.append("categoryName", productForm.categoryName);
       formData.append("productName", productForm.name);
       formData.append("description", productForm.description || "");
+      formData.append("additionalDescription", productForm.additionalDescription || "");
       
       if (productForm.image) {
         formData.append("image", productForm.image);
@@ -1045,6 +1050,16 @@ const AdminPanel = () => {
     }
   });
 
+  // Filter products with low stock (any variant has stock < 10)
+  const filteredLowStockProducts = (products || []).filter(p => {
+    if (!p || !p.variants || p.variants.length === 0) return false;
+    // Check if any variant has stock less than 10
+    return p.variants.some(v => {
+      const stock = Number(v.stock);
+      return !isNaN(stock) && stock < 10;
+    });
+  });
+
   // Show loading screen while checking admin access
   if (checkingAdmin) {
     return (
@@ -1130,6 +1145,25 @@ const AdminPanel = () => {
             }}
           >
             <FontAwesomeIcon icon={faReceipt} /> Orders
+          </button>
+          <button
+            className={activeTab === "lowstock" ? "active" : ""}
+            onClick={() => setActiveTab("lowstock")}
+          >
+            <FontAwesomeIcon icon={faExclamationTriangle} /> Low Stock
+            {filteredLowStockProducts.length > 0 && (
+              <span style={{ 
+                marginLeft: '8px', 
+                backgroundColor: 'red', 
+                color: 'white', 
+                borderRadius: '50%', 
+                padding: '2px 6px', 
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                {filteredLowStockProducts.length}
+              </span>
+            )}
           </button>
         </aside>
 
@@ -1310,14 +1344,142 @@ const AdminPanel = () => {
                         toolbar:
                           "undo redo | blocks | bold italic underline | " +
                           "alignleft aligncenter alignright alignjustify | " +
-                          "bullist numlist outdent indent | removeformat | help",
+                          "bullist numlist outdent indent | image link | removeformat | help",
                         branding: false,
-                        promotion: false
+                        promotion: false,
+                        images_upload_handler: async (blobInfo, progress) => {
+                          return new Promise((resolve, reject) => {
+                            const formData = new FormData();
+                            formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+                            const token = localStorage.getItem("authToken");
+
+                            const xhr = new XMLHttpRequest();
+                            xhr.withCredentials = false;
+                            xhr.open('POST', `${API_BASE}/api/admin/upload-image`);
+                            
+                            if (token) {
+                              xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                            }
+
+                            xhr.upload.onprogress = (e) => {
+                              progress(e.loaded / e.total * 100);
+                            };
+
+                            xhr.onload = () => {
+                              if (xhr.status === 403) {
+                                reject({ message: 'HTTP Error: ' + xhr.status, remove: true });
+                                return;
+                              }
+
+                              if (xhr.status < 200 || xhr.status >= 300) {
+                                reject('HTTP Error: ' + xhr.status);
+                                return;
+                              }
+
+                              const json = JSON.parse(xhr.responseText);
+
+                              if (!json || typeof json.location != 'string') {
+                                reject('Invalid JSON: ' + xhr.responseText);
+                                return;
+                              }
+
+                              resolve(json.location);
+                            };
+
+                            xhr.onerror = () => {
+                              reject('Image upload failed due to a XHR Transport error. Code: ' + xhr.status);
+                            };
+
+                            xhr.send(formData);
+                          });
+                        },
+                        automatic_uploads: true,
+                        file_picker_types: 'image',
+                        images_file_types: 'jpg,jpeg,png,gif,webp'
                       }}
                       onEditorChange={content =>
                         setProductForm(f => ({ ...f, description: content }))
                       }
                     />
+                  </div>
+
+                  <div className="product-form-field">
+                    <label className="product-field-label">Additional Description (for Additional Information tab)</label>
+                    <Editor
+                      value={productForm.additionalDescription || ""}
+                      init={{
+                        height: 220,
+                        menubar: false,
+                        plugins: [
+                          "advlist", "autolink", "lists", "link", "image", "charmap",
+                          "preview", "anchor", "searchreplace", "visualblocks",
+                          "code", "insertdatetime", "media", "table", "help", "wordcount"
+                        ],
+                        toolbar:
+                          "undo redo | blocks | bold italic underline | " +
+                          "alignleft aligncenter alignright alignjustify | " +
+                          "bullist numlist outdent indent | image link | removeformat | help",
+                        branding: false,
+                        promotion: false,
+                        images_upload_handler: async (blobInfo, progress) => {
+                          return new Promise((resolve, reject) => {
+                            const formData = new FormData();
+                            formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+                            const token = localStorage.getItem("authToken");
+
+                            const xhr = new XMLHttpRequest();
+                            xhr.withCredentials = false;
+                            xhr.open('POST', `${API_BASE}/api/admin/upload-image`);
+                            
+                            if (token) {
+                              xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                            }
+
+                            xhr.upload.onprogress = (e) => {
+                              progress(e.loaded / e.total * 100);
+                            };
+
+                            xhr.onload = () => {
+                              if (xhr.status === 403) {
+                                reject({ message: 'HTTP Error: ' + xhr.status, remove: true });
+                                return;
+                              }
+
+                              if (xhr.status < 200 || xhr.status >= 300) {
+                                reject('HTTP Error: ' + xhr.status);
+                                return;
+                              }
+
+                              const json = JSON.parse(xhr.responseText);
+
+                              if (!json || typeof json.location != 'string') {
+                                reject('Invalid JSON: ' + xhr.responseText);
+                                return;
+                              }
+
+                              resolve(json.location);
+                            };
+
+                            xhr.onerror = () => {
+                              reject('Image upload failed due to a XHR Transport error. Code: ' + xhr.status);
+                            };
+
+                            xhr.send(formData);
+                          });
+                        },
+                        automatic_uploads: true,
+                        file_picker_types: 'image',
+                        images_file_types: 'jpg,jpeg,png,gif,webp'
+                      }}
+                      onEditorChange={content =>
+                        setProductForm(f => ({ ...f, additionalDescription: content }))
+                      }
+                    />
+                    <small style={{ color: '#6b7280', marginTop: '8px', display: 'block' }}>
+                      This content will appear in the "Additional Information" tab on the product details page.
+                    </small>
                   </div>
                 </div>
 
@@ -2143,6 +2305,15 @@ const AdminPanel = () => {
                         <div className="product-card-body">
                           <h3 className="product-card-title">{p.name}</h3>
                           <p className="product-card-category">{p.categoryName || "Uncategorised"}</p>
+                          {(() => {
+                            const isOutOfStock = !p.variants || p.variants.length === 0 || 
+                              p.variants.every(v => Number(v.stock) === 0);
+                            return isOutOfStock && (
+                              <p className="out-of-stock" style={{ color: 'red', fontWeight: 600, marginTop: '8px', fontSize: '14px' }}>
+                                Out of Stock
+                              </p>
+                            );
+                          })()}
                           {p.variants && p.variants.length > 0 && (
                             <div className="product-variants-info">
                               <span className="variants-count">{p.variants.length} Variant{p.variants.length !== 1 ? 's' : ''}</span>
@@ -2615,6 +2786,190 @@ const AdminPanel = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === "lowstock" && (
+            <section className="admin-card">
+              <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FontAwesomeIcon icon={faExclamationTriangle} style={{ color: 'red' }} />
+                  Low Stock Products
+                  <span style={{ 
+                    marginLeft: '10px', 
+                    backgroundColor: 'red', 
+                    color: 'white', 
+                    borderRadius: '12px', 
+                    padding: '4px 12px', 
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                  }}>
+                    {filteredLowStockProducts.length}
+                  </span>
+                </h2>
+                <p style={{ color: '#666', marginTop: '-10px', marginBottom: '20px' }}>
+                  Products with any variant having stock less than 10 units
+                </p>
+              </div>
+
+              {filteredLowStockProducts.length === 0 ? (
+                <div className="empty-state">
+                  <p>No products with low stock. All products have sufficient inventory.</p>
+                </div>
+              ) : (
+                <div className="products-grid">
+                  {filteredLowStockProducts.map(p => {
+                    const image = p.image?.startsWith("http")
+                      ? p.image
+                      : `${API_BASE}${p.image}`;
+                    
+                    // Get low stock variants
+                    const lowStockVariants = (p.variants || []).filter(v => {
+                      const stock = Number(v.stock);
+                      return !isNaN(stock) && stock < 10;
+                    });
+
+                    return (
+                      <div key={p.id} className="product-card" style={{ border: '2px solid red', position: 'relative' }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '10px',
+                          right: '10px',
+                          backgroundColor: 'red',
+                          color: 'white',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          zIndex: 10
+                        }}>
+                          <FontAwesomeIcon icon={faExclamationTriangle} /> LOW STOCK
+                        </div>
+                        <div className="product-card-header">
+                          <div className="product-image-wrapper">
+                            <img src={image} alt={p.name} className="product-card-image" />
+                            <span className={`status-badge ${p.isActive ? "status-active" : "status-inactive"}`}>
+                              {p.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="product-card-body">
+                          <h3 className="product-card-title">{p.name}</h3>
+                          <p className="product-card-category">{p.categoryName || "Uncategorised"}</p>
+                          <div style={{ 
+                            marginTop: '12px', 
+                            padding: '10px', 
+                            backgroundColor: '#fff3cd', 
+                            border: '1px solid #ffc107',
+                            borderRadius: '4px'
+                          }}>
+                            <p style={{ fontWeight: 600, marginBottom: '8px', color: '#856404' }}>
+                              Low Stock Variants ({lowStockVariants.length}):
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {lowStockVariants.map(v => {
+                                const stock = Number(v.stock);
+                                const attrs = v.attributes || [];
+                                const attrsObj = Array.isArray(attrs)
+                                  ? attrs.reduce((acc, a) => { if (a && a.name) acc[a.name] = a.value; return acc; }, {})
+                                  : (typeof attrs === 'object' ? attrs : {});
+                                const attrStr = Object.keys(attrsObj).length > 0
+                                  ? Object.entries(attrsObj).map(([k, v]) => `${k}: ${v}`).join(', ')
+                                  : 'Default';
+                                
+                                return (
+                                  <div key={v.id} style={{ 
+                                    display: 'flex', 
+                                    justifyContent: 'space-between',
+                                    padding: '6px',
+                                    backgroundColor: stock === 0 ? '#f8d7da' : '#fff3cd',
+                                    borderRadius: '3px',
+                                    border: stock === 0 ? '1px solid #dc3545' : '1px solid #ffc107'
+                                  }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 500 }}>
+                                      {v.sku || `Variant ${v.id}`} {attrStr && `(${attrStr})`}
+                                    </span>
+                                    <span style={{ 
+                                      color: stock === 0 ? 'red' : '#856404', 
+                                      fontWeight: 'bold',
+                                      fontSize: '13px'
+                                    }}>
+                                      Stock: {stock}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {p.variants && p.variants.length > 0 && (
+                            <div className="product-variants-info" style={{ marginTop: '12px' }}>
+                              <span className="variants-count">Total: {p.variants.length} Variant{p.variants.length !== 1 ? 's' : ''}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="product-card-actions">
+                          <button
+                            type="button"
+                            className="btn-edit"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                startEditProduct(p);
+                              } catch (error) {
+                                console.error("Error in edit button click:", error);
+                                setMessage("Error loading product for editing: " + (error.message || "Unknown error"));
+                              }
+                            }}
+                          >
+                            <FontAwesomeIcon icon={faEdit} /> Edit
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn-status ${p.isActive ? "btn-deactivate" : "btn-activate"}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                toggleStatus(p);
+                              } catch (error) {
+                                console.error("Error in toggle status:", error);
+                                setMessage("Error updating product status: " + (error.message || "Unknown error"));
+                              }
+                            }}
+                          >
+                            {p.isActive ? (
+                              <>
+                                <FontAwesomeIcon icon={faTimes} /> Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <FontAwesomeIcon icon={faCheck} /> Activate
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-delete"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              try {
+                                handleDeleteProduct(p.id);
+                              } catch (error) {
+                                console.error("Error in delete button click:", error);
+                                setMessage("Error deleting product: " + (error.message || "Unknown error"));
+                              }
+                            }}
+                          >
+                            <FontAwesomeIcon icon={faTrash} /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           )}
 
         {/* Cancellation Reason Modal */}

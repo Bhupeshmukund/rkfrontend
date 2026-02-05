@@ -1,0 +1,109 @@
+.email-float {
+  position: fixed;
+  bottom: 150px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background: #0aa0df;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(10, 160, 223, 0.4);
+  z-index: 999;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  animation: pulse-email 2s infinite;
+  cursor: pointer;
+}
+
+.email-float:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(10, 160, 223, 0.6);
+  background: #0884b8;
+}
+
+.email-icon {
+  font-size: 32px;
+  color: #ffffff;
+}
+
+.email-tooltip {
+  position: absolute;
+  right: 70px;
+  background: #1f2937;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.email-tooltip::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left-color: #1f2937;
+}
+
+.email-float:hover .email-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@keyframes pulse-email {
+  0% {
+    box-shadow: 0 4px 12px rgba(10, 160, 223, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(10, 160, 223, 0.6);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(10, 160, 223, 0.4);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .email-float {
+    bottom: 170px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .email-icon {
+    font-size: 28px;
+  }
+
+  .email-tooltip {
+    right: 65px;
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .email-float {
+    bottom: 160px;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+  }
+
+  .email-icon {
+    font-size: 26px;
+  }
+
+  .email-tooltip {
+    display: none;
+  }
+}
