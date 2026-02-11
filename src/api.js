@@ -137,7 +137,20 @@ export const api = {
 
   deleteVariant: id =>
     fetch(`${API_BASE}/api/admin/variants/${id}`, {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
+    }).then(handle),
+
+  bulkDeleteVariants: (variantIds) =>
+    fetch(`${API_BASE}/api/admin/variants/bulk-delete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      },
+      body: JSON.stringify({ variantIds })
     }).then(handle),
 
   // Update a single variant's editable fields (sku, price, stock)
@@ -218,7 +231,15 @@ export const api = {
       if (!res.ok) throw new Error(`Fallback failed with status ${res.status}`);
       return await res.json();
     }
-  }
+  },
+
+  // Contact form
+  submitContact: (name, email, message) =>
+    fetch(`${API_BASE}/api/public/contact`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, message })
+    }).then(handle)
 };
 
 export { API_BASE };

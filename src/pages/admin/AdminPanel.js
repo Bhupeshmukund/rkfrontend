@@ -49,6 +49,8 @@ const AdminPanel = () => {
   const [deletingVariantIndex, setDeletingVariantIndex] = useState(null);
   const [emptyVariantIndices, setEmptyVariantIndices] = useState([]);
   const [confirmIgnoreEmpty, setConfirmIgnoreEmpty] = useState(false);
+  const [selectedVariantIds, setSelectedVariantIds] = useState([]);
+  const [deletingVariants, setDeletingVariants] = useState(false);
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("category");
 
@@ -1164,6 +1166,58 @@ const AdminPanel = () => {
       setMessage(err.message || "Failed to delete variant.");
     } finally {
       if (index !== null) setDeletingVariantIndex(null);
+    }
+  };
+
+  // Handle bulk deletion of variants
+  const handleBulkDeleteVariants = async () => {
+    if (selectedVariantIds.length === 0) {
+      setMessage("Please select at least one variant to delete.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${selectedVariantIds.length} variant(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingVariants(true);
+    try {
+      await api.bulkDeleteVariants(selectedVariantIds);
+      setMessage(`Successfully deleted ${selectedVariantIds.length} variant(s).`);
+      
+      // Remove deleted variants from the current variants list
+      setVariants(prev => prev.filter(v => !selectedVariantIds.includes(v.id)));
+      
+      // Clear selection
+      setSelectedVariantIds([]);
+      
+      // Reload products to update the list
+      loadProducts();
+    } catch (err) {
+      console.error("Error bulk deleting variants:", err);
+      setMessage(err.message || "Failed to delete variants.");
+    } finally {
+      setDeletingVariants(false);
+    }
+  };
+
+  // Handle checkbox toggle for variant selection
+  const handleVariantCheckboxChange = (variantId, checked) => {
+    if (checked) {
+      setSelectedVariantIds(prev => [...prev, variantId]);
+    } else {
+      setSelectedVariantIds(prev => prev.filter(id => id !== variantId));
+    }
+  };
+
+  // Handle select all / deselect all
+  const handleSelectAllVariants = (checked) => {
+    if (checked) {
+      // Select all variants that have an ID (existing variants)
+      const allVariantIds = variants.filter(v => v.id).map(v => v.id);
+      setSelectedVariantIds(allVariantIds);
+    } else {
+      setSelectedVariantIds([]);
     }
   };
 
@@ -2486,8 +2540,32 @@ const AdminPanel = () => {
                     {/* Existing Variants - Inline editable section (shows server variants, editable individually) */}
                     <div className="existing-variants-section">
                       <div className="variants-section-header">
-                        <h3>Existing Variants</h3>
+                        <h3>Existing Variants {selectedVariantIds.length > 0 && `(${selectedVariantIds.length} selected)`}</h3>
                         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                          {selectedVariantIds.length > 0 && (
+                            <button 
+                              type="button" 
+                              className="btn-delete-selected" 
+                              onClick={handleBulkDeleteVariants}
+                              disabled={deletingVariants}
+                              style={{ 
+                                display: "inline-flex", 
+                                alignItems: "center", 
+                                gap: "8px", 
+                                padding: "10px 16px", 
+                                background: deletingVariants ? "#9ca3af" : "#dc2626", 
+                                color: "#fff", 
+                                border: "none", 
+                                borderRadius: "6px", 
+                                fontSize: "14px", 
+                                fontWeight: "500", 
+                                transition: "background 0.2s", 
+                                cursor: deletingVariants ? "not-allowed" : "pointer" 
+                              }}
+                            >
+                              <FontAwesomeIcon icon={faTrash} /> {deletingVariants ? "Deleting..." : `Delete Selected (${selectedVariantIds.length})`}
+                            </button>
+                          )}
                           <button type="button" className="btn-add-column" onClick={addMatrixColumn}>
                             <FontAwesomeIcon icon={faPlus} /> Add Column
                           </button>
@@ -2524,6 +2602,16 @@ const AdminPanel = () => {
                         <table className="variants-table">
                           <thead>
                             <tr>
+                              <th style={{ width: "40px", textAlign: "center" }}>
+                                {variants.filter(v => v.id).length > 0 && (
+                                  <input
+                                    type="checkbox"
+                                    checked={variants.filter(v => v.id).length > 0 && variants.filter(v => v.id).every(v => selectedVariantIds.includes(v.id))}
+                                    onChange={(e) => handleSelectAllVariants(e.target.checked)}
+                                    title="Select All"
+                                  />
+                                )}
+                              </th>
                               {/* Render attribute columns first (Matrix Mode style) */}
                               {variantMatrix.columns.map((col, ci) => (
                                 <th key={`attr-col-${col.id || ci}`} className="matrix-column-header">
@@ -2648,6 +2736,17 @@ const AdminPanel = () => {
                           <tbody>
                             {variants.map((variant, idx) => (
                               <tr key={`existing-variant-${variant.id || idx}`} className={emptyVariantIndices.includes(idx) ? 'variant-row-empty' : ''}>
+                                <td style={{ textAlign: "center" }}>
+                                  {variant.id ? (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedVariantIds.includes(variant.id)}
+                                      onChange={(e) => handleVariantCheckboxChange(variant.id, e.target.checked)}
+                                    />
+                                  ) : (
+                                    <span style={{ color: "#9ca3af" }}>-</span>
+                                  )}
+                                </td>
                                 {/* Render one cell per attribute column so values align with matrix columns */}
                                 {variantMatrix.columns.map((col, ci) => (
                                   <td key={`existing-attr-${idx}-${col.id || ci}`}>

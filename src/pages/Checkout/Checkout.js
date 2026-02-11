@@ -363,9 +363,8 @@ const Checkout = () => {
 
     // Calculate totals (GST only for India)
     const subtotalAmount = getCartTotal();
-    const shippingAmount = 250;
     const gstAmount = billing.country === "India" ? subtotalAmount * 0.18 : 0;
-    const totalAmount = subtotalAmount + shippingAmount + gstAmount;
+    const totalAmount = subtotalAmount + gstAmount;
 
     // Handle Razorpay payment
     if (billing.payment === "razorpay") {
@@ -394,7 +393,6 @@ const Checkout = () => {
                 billing: billing,
                 items: cart,
                 subtotal: subtotalAmount,
-                shipping: shippingAmount,
                 gst: gstAmount,
                 total: totalAmount
               });
@@ -451,7 +449,6 @@ const Checkout = () => {
       formData.append("billing", JSON.stringify(billing));
       formData.append("items", JSON.stringify(cart));
       formData.append("subtotal", subtotalAmount.toString());
-      formData.append("shipping", shippingAmount.toString());
       formData.append("gst", gstAmount.toString());
       formData.append("total", totalAmount.toString());
       formData.append("paymentMethod", billing.payment);
@@ -477,9 +474,8 @@ const Checkout = () => {
 
   // Calculate totals (GST only for India)
   const subtotal = getCartTotal();
-  const shipping = 250;
   const gst = billing.country === "India" ? subtotal * 0.18 : 0; // 18% GST only for India
-  const total = subtotal + shipping + gst;
+  const total = subtotal + gst;
 
   return (
     <form className="checkout-container" onSubmit={handleSubmit}>
@@ -759,11 +755,6 @@ const Checkout = () => {
           <div className="order-row">
             <strong>Subtotal</strong>
             <strong>{formatCurrency(subtotal)}</strong>
-          </div>
-
-          <div className="order-row">
-            <span>Shipping</span>
-            <span>{formatCurrency(shipping)}</span>
           </div>
 
           {billing.country === "India" && (

@@ -48,9 +48,21 @@
     border: 1px solid #d1d5db;
     border-radius: 6px;
     outline: none;
-    font-size: 14px;
+    transition: border-color 0.3s;
   }
-  
+
+  .form-group input.error,
+  .form-group textarea.error {
+    border-color: #dc3545;
+  }
+
+  .form-group .error-message {
+    display: block;
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
   .form-group input:focus,
   .form-group textarea:focus {
     border-color: #2563eb;
@@ -66,8 +78,14 @@
     font-size: 15px;
   }
   
-  .send-btn:hover {
+  .send-btn:hover:not(:disabled) {
     background: #1e4ed8;
+  }
+
+  .send-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.7;
   }
   
   /* Map */
