@@ -1,5 +1,6 @@
 import React from 'react';
 import './BankDetails.css';
+import paymentQR from '../../assets/payment_qr.jpg';
 
 const BankDetails = () => {
     return (
@@ -43,18 +44,11 @@ const BankDetails = () => {
                     <div className="bankDetails-scan-pay-section">
                         <h2 className="bankDetails-section-title bankDetails-scan-title">SCAN & PAY</h2>
                         <div className="bankDetails-qr-code-container">
-                            {/* QR Code Placeholder - Replace with actual QR code image */}
-                            <div className="bankDetails-qr-code-placeholder">
-                                <p>QR Code Image</p>
-                                <p className="bankDetails-qr-note">(Please add QR code image here)</p>
-                            </div>
-                            {/* Uncomment and use when QR code image is available:
                             <img 
-                                src={require('../../assets/qr-code.png')} 
+                                src={paymentQR} 
                                 alt="Scan & Pay QR Code" 
                                 className="bankDetails-qr-code-image"
                             />
-                            */}
                         </div>
                     </div>
                 </div>

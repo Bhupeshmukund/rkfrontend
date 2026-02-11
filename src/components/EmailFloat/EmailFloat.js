@@ -4,7 +4,7 @@ import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import './EmailFloat.css';
 
 const EmailFloat = () => {
-  const email = 'rkindustriesexports@gmail.com';
+  const email = 'sales@rkindustriesexports.com';
   const subject = 'Inquiry about RK Industries';
   const body = 'Hello! I would like to know more about your products.';
   const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;

@@ -4,9 +4,12 @@ import "./Checkout.css";
 import { getCart, getCartTotal, clearCart } from "../../utils/cart";
 import { api } from "../../api";
 import { Country, State, City } from "country-state-city";
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { formatPrice } from "../../utils/currency";
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const { currency, exchangeRate } = useCurrency();
   const [cart, setCart] = useState([]);
   const [paymentProof, setPaymentProof] = useState(null);
   const [countries, setCountries] = useState([]);
@@ -14,8 +17,6 @@ const Checkout = () => {
   const [cities, setCities] = useState([]);
   const [selectedCountryCode, setSelectedCountryCode] = useState("");
   const [selectedStateCode, setSelectedStateCode] = useState("");
-  const [usdRate, setUsdRate] = useState(null); // USD to INR rate
-  const [loadingRate, setLoadingRate] = useState(true);
   const [errors, setErrors] = useState({});
   const [billing, setBilling] = useState({
     firstName: "",
@@ -63,32 +64,7 @@ const Checkout = () => {
     setBilling(prev => ({ ...prev, city: "" }));
   };
 
-  // Fetch USD to INR exchange rate
-  useEffect(() => {
-    const fetchExchangeRate = async () => {
-      try {
-        setLoadingRate(true);
-        // Using exchangerate-api.com free API (no API key needed for basic usage)
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-        const data = await response.json();
-        if (data && data.rates && data.rates.INR) {
-          // Store the rate (1 USD = X INR)
-          setUsdRate(data.rates.INR);
-        } else {
-          // Fallback rate if API fails
-          setUsdRate(83); // Approximate fallback rate
-        }
-      } catch (error) {
-        console.error("Error fetching exchange rate:", error);
-        // Fallback rate if API fails
-        setUsdRate(83); // Approximate fallback rate
-      } finally {
-        setLoadingRate(false);
-      }
-    };
-
-    fetchExchangeRate();
-  }, []);
+  // Exchange rate conversion removed - all prices are in USDT
 
   // Load countries and set default to India
   useEffect(() => {
@@ -494,21 +470,9 @@ const Checkout = () => {
     }
   };
 
-  // Helper function to convert INR to USD
-  const convertToUSD = (inrAmount) => {
-    if (!usdRate || billing.country === "India") {
-      return inrAmount;
-    }
-    return inrAmount / usdRate;
-  };
-
-  // Helper function to format currency
+  // Helper function to format currency based on user location
   const formatCurrency = (amount) => {
-    if (billing.country === "India") {
-      return `₹${amount.toFixed(2)}`;
-    } else {
-      return `$${convertToUSD(amount).toFixed(2)}`;
-    }
+    return formatPrice(amount, currency, exchangeRate);
   };
 
   // Calculate totals (GST only for India)
@@ -764,26 +728,6 @@ const Checkout = () => {
       <div className="checkout-right">
         <h3>Your Order</h3>
 
-        {billing.country && billing.country !== "India" && (
-          <div style={{ 
-            marginBottom: '15px', 
-            padding: '10px', 
-            backgroundColor: '#f0f7ff', 
-            border: '1px solid #b3d9ff', 
-            borderRadius: '4px',
-            fontSize: '13px',
-            color: '#0066cc'
-          }}>
-            <strong>Exchange Rate:</strong>{' '}
-            {loadingRate ? (
-              <span style={{ fontStyle: 'italic' }}>Loading...</span>
-            ) : usdRate ? (
-              <>1 USD = ₹{usdRate.toFixed(2)} INR</>
-            ) : (
-              <span style={{ fontStyle: 'italic' }}>Unable to fetch rate</span>
-            )}
-          </div>
-        )}
 
         <div className="order-box">
           {cart.map(item => {

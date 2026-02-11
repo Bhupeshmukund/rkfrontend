@@ -4,7 +4,7 @@ import "./AdminPanel.css";
 import { api, API_BASE } from "../../api";
 import { Editor } from "@tinymce/tinymce-react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faEdit, faPlus, faSearch, faBox, faList, faReceipt, faCheck, faTimes, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faEdit, faPlus, faSearch, faBox, faList, faReceipt, faCheck, faTimes, faExclamationTriangle, faDownload } from '@fortawesome/free-solid-svg-icons';
 
 const TINYMCE_KEY =
   process.env.REACT_APP_TINYMCE_API_KEY ||
@@ -342,6 +342,10 @@ const AdminPanel = () => {
       return; // Don't update if duplicate
     }
     
+    // Get the old attribute name before updating
+    const oldColumn = variantMatrix.columns.find(col => col.id === columnId);
+    const oldAttributeName = oldColumn ? oldColumn.attributeName : "";
+    
     // Clear error for this column
     setMatrixErrors(prev => {
       const newErrors = { ...prev };
@@ -359,8 +363,30 @@ const AdminPanel = () => {
       columns: prev.columns.map(col => col.id === columnId ? { ...col, attributeName: trimmedName } : col)
     }));
 
-    // If this is an edit session, add this attribute (empty value) to any variant that doesn't have it
-    if (trimmedName && editProduct) {
+    // If this is an edit session, update variant attributes to preserve values when column name changes
+    if (editProduct && oldAttributeName !== trimmedName) {
+      setVariants(prev => prev.map(v => {
+        const attrs = (v.attributes || []).map(attr => {
+          // If this attribute matches the old column name, update it to the new name while preserving value
+          if (attr.name === oldAttributeName) {
+            return { ...attr, name: trimmedName };
+          }
+          return attr;
+        });
+        
+        // If the old attribute name existed but we didn't find it (edge case), or if it's a new attribute
+        const hadOldAttr = (v.attributes || []).some(a => a.name === oldAttributeName);
+        const hasNewAttr = attrs.some(a => a.name === trimmedName);
+        
+        if (!hadOldAttr && trimmedName && !hasNewAttr) {
+          // Add new attribute if it didn't exist before
+          attrs.push({ name: trimmedName, value: "" });
+        }
+        
+        return { ...v, attributes: attrs };
+      }));
+    } else if (trimmedName && editProduct) {
+      // If no old name (new column), add this attribute to variants that don't have it
       setVariants(prev => prev.map(v => {
         const has = (v.attributes || []).some(a => a.name === trimmedName);
         if (!has) {
@@ -558,6 +584,469 @@ const AdminPanel = () => {
     }).filter(v => (v.sku && v.sku.trim() !== "") || v.price > 0); // Only include valid variants
   };
 
+  // Parse CSV and populate variant matrix
+  const handleCSVUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const fileName = file.name.toLowerCase();
+    const validExtensions = ['.csv'];
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!hasValidExtension) {
+      setMessage("Invalid file type. Please upload a CSV file (.csv extension required).");
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setMessage(`File size too large. Maximum file size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
+      e.target.value = '';
+      return;
+    }
+
+    // Validate MIME type if available
+    if (file.type && !file.type.includes('csv') && !file.type.includes('text') && file.type !== 'application/vnd.ms-excel') {
+      setMessage("Invalid file type. Please upload a valid CSV file.");
+      e.target.value = '';
+      return;
+    }
+
+    // Reset file input
+    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        
+        if (lines.length < 2) {
+          setMessage("CSV file must have at least a header row and one data row.");
+          return;
+        }
+
+        // Parse CSV (handle quoted values and commas)
+        const parseCSVLine = (line) => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+
+        const headerRow = parseCSVLine(lines[0]);
+        
+        // Validate header row
+        if (headerRow.length === 0 || headerRow.every(h => !h || h.trim() === '')) {
+          setMessage("CSV file has an invalid or empty header row. Please check your file format.");
+          return;
+        }
+
+        const dataRows = lines.slice(1).map(parseCSVLine);
+
+        // Validate that all rows have the same number of columns as header
+        const expectedColumnCount = headerRow.length;
+        const invalidRows = dataRows.filter((row, idx) => row.length !== expectedColumnCount);
+        if (invalidRows.length > 0) {
+          setMessage(`CSV file has inconsistent column counts. Row ${dataRows.indexOf(invalidRows[0]) + 2} has ${invalidRows[0].length} columns but header has ${expectedColumnCount} columns.`);
+          return;
+        }
+
+        // Identify columns: attributes vs metadata (Price, SKU, Stock)
+        const metadataColumns = ['price', 'sku', 'stock'];
+        const attributeColumns = [];
+        const metadataIndices = {};
+
+        headerRow.forEach((header, index) => {
+          const normalizedHeader = header.toLowerCase().trim();
+          if (metadataColumns.includes(normalizedHeader)) {
+            metadataIndices[normalizedHeader] = index;
+          } else {
+            attributeColumns.push({ index, name: header.trim() });
+          }
+        });
+
+        if (attributeColumns.length === 0) {
+          setMessage("CSV must have at least one attribute column (e.g., Size, Color, Material). Price, SKU, and Stock columns are optional.");
+          return;
+        }
+
+        // Build matrix columns from attribute columns
+        const newColumns = attributeColumns.map((col, idx) => ({
+          id: idx + 1,
+          attributeName: col.name,
+          values: []
+        }));
+
+        // Build matrix rows from data rows
+        const newRows = dataRows.map((row, rowIdx) => {
+          const values = {};
+          let price = '';
+          let sku = '';
+          let stock = '';
+
+          // Map attribute values
+          attributeColumns.forEach((attrCol, colIdx) => {
+            const value = row[attrCol.index] || '';
+            values[colIdx + 1] = value;
+          });
+
+          // Extract metadata
+          if (metadataIndices.price !== undefined) {
+            price = row[metadataIndices.price] || '';
+          }
+          if (metadataIndices.sku !== undefined) {
+            sku = row[metadataIndices.sku] || '';
+          }
+          if (metadataIndices.stock !== undefined) {
+            stock = row[metadataIndices.stock] || '';
+          }
+
+          return {
+            id: rowIdx + 1,
+            values: values,
+            price: price,
+            sku: sku,
+            stock: stock
+          };
+        });
+
+        // Update matrix
+        setVariantMatrix({
+          columns: newColumns.length > 0 ? newColumns : [{ id: 1, attributeName: "", values: [] }],
+          rows: newRows.length > 0 ? newRows : [{ id: 1, values: { 1: "" }, price: "", sku: "", stock: "" }]
+        });
+
+        // Add new attribute names to available list
+        attributeColumns.forEach(col => {
+          if (col.name && !availableAttributeNames.includes(col.name)) {
+            setAvailableAttributeNames(prev => [...prev, col.name].sort());
+          }
+        });
+
+        setMessage(`Successfully imported ${newRows.length} variant(s) from CSV with ${newColumns.length} attribute(s).`);
+      } catch (err) {
+        console.error("CSV parsing error:", err);
+        setMessage(`Failed to parse CSV: ${err.message || "Invalid CSV format"}`);
+      }
+    };
+
+    reader.onerror = () => {
+      setMessage("Failed to read CSV file.");
+    };
+
+    reader.readAsText(file);
+  };
+
+  // Download variant matrix as CSV
+  const handleCSVDownload = () => {
+    try {
+      // Build header row: attribute columns + Price, SKU, Stock
+      const headers = [
+        ...variantMatrix.columns.map(col => col.attributeName || ''),
+        'Price',
+        'SKU',
+        'Stock'
+      ].filter(h => h !== ''); // Remove empty headers
+
+      // Build data rows
+      const rows = variantMatrix.rows.map(row => {
+        const rowData = [];
+        
+        // Add attribute values
+        variantMatrix.columns.forEach(col => {
+          const value = row.values[col.id] || '';
+          // Escape commas and quotes in CSV
+          const escapedValue = value.includes(',') || value.includes('"') || value.includes('\n')
+            ? `"${value.replace(/"/g, '""')}"`
+            : value;
+          rowData.push(escapedValue);
+        });
+        
+        // Add metadata
+        rowData.push(row.price || '');
+        rowData.push(row.sku || '');
+        rowData.push(row.stock || '');
+        
+        return rowData;
+      });
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `variants_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setMessage(`CSV file downloaded successfully with ${rows.length} variant(s).`);
+    } catch (err) {
+      console.error("CSV download error:", err);
+      setMessage(`Failed to download CSV: ${err.message || "Unknown error"}`);
+    }
+  };
+
+  // Download existing variants as CSV (for edit mode)
+  const handleExistingVariantsCSVDownload = () => {
+    try {
+      if (variants.length === 0) {
+        setMessage("No variants to download.");
+        return;
+      }
+
+      // Get all unique attribute names from variants
+      const attributeNames = Array.from(
+        new Set(
+          variants.flatMap(v => (v.attributes || []).map(a => a.name).filter(Boolean))
+        )
+      );
+
+      // Build header row: attribute columns + Price, SKU, Stock
+      const headers = [
+        ...attributeNames,
+        'Price',
+        'SKU',
+        'Stock'
+      ];
+
+      // Build data rows
+      const rows = variants.map(variant => {
+        const rowData = [];
+        
+        // Add attribute values in the same order as headers
+        attributeNames.forEach(attrName => {
+          const attr = (variant.attributes || []).find(a => a.name === attrName);
+          const value = attr ? attr.value : '';
+          // Escape commas and quotes in CSV
+          const escapedValue = value.includes(',') || value.includes('"') || value.includes('\n')
+            ? `"${value.replace(/"/g, '""')}"`
+            : value;
+          rowData.push(escapedValue);
+        });
+        
+        // Add metadata
+        rowData.push(variant.price || '');
+        rowData.push(variant.sku || '');
+        rowData.push(variant.stock || '');
+        
+        return rowData;
+      });
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `existing_variants_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setMessage(`CSV file downloaded successfully with ${rows.length} variant(s).`);
+    } catch (err) {
+      console.error("CSV download error:", err);
+      setMessage(`Failed to download CSV: ${err.message || "Unknown error"}`);
+    }
+  };
+
+  // Upload CSV for existing variants (for edit mode)
+  const handleExistingVariantsCSVUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const fileName = file.name.toLowerCase();
+    const validExtensions = ['.csv'];
+    const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!hasValidExtension) {
+      setMessage("Invalid file type. Please upload a CSV file (.csv extension required).");
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setMessage(`File size too large. Maximum file size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
+      e.target.value = '';
+      return;
+    }
+
+    // Validate MIME type if available
+    if (file.type && !file.type.includes('csv') && !file.type.includes('text') && file.type !== 'application/vnd.ms-excel') {
+      setMessage("Invalid file type. Please upload a valid CSV file.");
+      e.target.value = '';
+      return;
+    }
+
+    // Reset file input
+    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result;
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        
+        if (lines.length < 2) {
+          setMessage("CSV file must have at least a header row and one data row.");
+          return;
+        }
+
+        // Parse CSV (handle quoted values and commas)
+        const parseCSVLine = (line) => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+
+        const headerRow = parseCSVLine(lines[0]);
+        
+        // Validate header row
+        if (headerRow.length === 0 || headerRow.every(h => !h || h.trim() === '')) {
+          setMessage("CSV file has an invalid or empty header row. Please check your file format.");
+          return;
+        }
+
+        const dataRows = lines.slice(1).map(parseCSVLine);
+
+        // Validate that all rows have the same number of columns as header
+        const expectedColumnCount = headerRow.length;
+        const invalidRows = dataRows.filter((row, idx) => row.length !== expectedColumnCount);
+        if (invalidRows.length > 0) {
+          setMessage(`CSV file has inconsistent column counts. Row ${dataRows.indexOf(invalidRows[0]) + 2} has ${invalidRows[0].length} columns but header has ${expectedColumnCount} columns.`);
+          return;
+        }
+
+        // Identify columns: attributes vs metadata (Price, SKU, Stock)
+        const metadataColumns = ['price', 'sku', 'stock'];
+        const attributeColumns = [];
+        const metadataIndices = {};
+
+        headerRow.forEach((header, index) => {
+          const normalizedHeader = header.toLowerCase().trim();
+          if (metadataColumns.includes(normalizedHeader)) {
+            metadataIndices[normalizedHeader] = index;
+          } else {
+            attributeColumns.push({ index, name: header.trim() });
+          }
+        });
+
+        if (attributeColumns.length === 0) {
+          setMessage("CSV must have at least one attribute column (e.g., Size, Color, Material). Price, SKU, and Stock columns are optional.");
+          return;
+        }
+
+        // Convert CSV rows to variant format
+        const newVariants = dataRows.map((row, rowIdx) => {
+          const attributes = attributeColumns
+            .filter(attrCol => row[attrCol.index] && row[attrCol.index].trim() !== '')
+            .map(attrCol => ({
+              name: attrCol.name,
+              value: row[attrCol.index] || ''
+            }));
+
+          const variant = {
+            sku: metadataIndices.sku !== undefined ? (row[metadataIndices.sku] || '') : '',
+            price: metadataIndices.price !== undefined ? (row[metadataIndices.price] || 0) : 0,
+            stock: metadataIndices.stock !== undefined ? (row[metadataIndices.stock] || 0) : 0,
+            attributes: attributes
+          };
+
+          // Preserve existing variant ID if we're updating (match by index or SKU)
+          if (variants[rowIdx] && variants[rowIdx].id) {
+            variant.id = variants[rowIdx].id;
+          }
+
+          return variant;
+        });
+
+        // Update variants state
+        setVariants(newVariants.length > 0 ? newVariants : [buildEmptyVariant()]);
+
+        // Update matrix columns to match attribute names
+        const attributeNames = attributeColumns.map(col => col.name);
+        if (attributeNames.length > 0) {
+          setVariantMatrix(prev => ({
+            ...prev,
+            columns: attributeNames.map((name, idx) => ({
+              id: idx + 1,
+              attributeName: name,
+              values: []
+            }))
+          }));
+        }
+
+        // Add new attribute names to available list
+        attributeColumns.forEach(col => {
+          if (col.name && !availableAttributeNames.includes(col.name)) {
+            setAvailableAttributeNames(prev => [...prev, col.name].sort());
+          }
+        });
+
+        setMessage(`Successfully imported ${newVariants.length} variant(s) from CSV with ${attributeColumns.length} attribute(s).`);
+      } catch (err) {
+        console.error("CSV parsing error:", err);
+        setMessage(`Failed to parse CSV: ${err.message || "Invalid CSV format"}`);
+      }
+    };
+
+    reader.onerror = () => {
+      setMessage("Failed to read CSV file.");
+    };
+
+    reader.readAsText(file);
+  };
+
   const handleProductSubmit = async e => {
     e.preventDefault();
     if (!productForm.categoryName || !productForm.name || !productForm.image) {
@@ -678,28 +1167,146 @@ const AdminPanel = () => {
     }
   };
 
-  const copyVariantsFromProduct = (productId) => {
+  const copyVariantsFromProduct = async (productId) => {
+    if (!productId) return;
+    
     const source = products.find(p => p.id === Number(productId));
-    if (!source) return;
+    if (!source) {
+      setMessage("Product not found.");
+      return;
+    }
     
-    // Deduplicate variants when copying
-    const uniqueVariantsMap = new Map();
-    (source.variants || []).forEach(v => {
-      const key = v.id || v.sku;
-      if (key && !uniqueVariantsMap.has(key)) {
-        uniqueVariantsMap.set(key, {
-          id: v.id,
-          sku: v.sku || "",
-          price: v.price || "",
-          stock: v.stock || "",
-          attributes: (v.attributes || []).map(a => ({ name: a.name || "", value: a.value || "" }))
-        });
+    try {
+      // Fetch the product with full variant data to ensure we have all variants
+      const res = await api.getProductForEdit(Number(productId));
+      const serverProduct = res.product || {};
+      const serverVariants = res.variants || [];
+      
+      if (serverVariants.length === 0) {
+        setMessage(`No variants found in ${source.name}.`);
+        return;
       }
-    });
-    
-    const copied = Array.from(uniqueVariantsMap.values());
-    setVariants(copied.length ? copied : [buildEmptyVariant()]);
-    setMessage(`Copied ${copied.length} variant(s) from ${source.name}.`);
+      
+      // Normalize variants: remove id (since we're creating new variants) and ensure attributes are in array format
+      const normalized = serverVariants.map(v => {
+        // Convert attributes object to array format if needed
+        let attributes = [];
+        if (v.attributes) {
+          if (Array.isArray(v.attributes)) {
+            attributes = v.attributes.map(a => ({ 
+              name: a.name || "", 
+              value: a.value || "" 
+            }));
+          } else if (typeof v.attributes === 'object') {
+            // Convert object format { Size: "8 inches", Color: "Red" } to array format
+            attributes = Object.keys(v.attributes).map(name => ({
+              name: name || "",
+              value: v.attributes[name] || ""
+            }));
+          }
+        }
+        
+        return {
+          // Don't include id - we're creating new variants
+          sku: v.sku || "",
+          price: v.price || 0,
+          stock: v.stock || 0,
+          attributes: attributes
+        };
+      });
+      
+      // Deduplicate variants based on attribute combination
+      const uniqueVariantsMap = new Map();
+      normalized.forEach(v => {
+        // Create a unique key based on attributes
+        const attrKey = JSON.stringify(
+          (v.attributes || [])
+            .map(a => `${a.name}:${a.value}`)
+            .sort()
+            .join('|')
+        );
+        if (!uniqueVariantsMap.has(attrKey)) {
+          uniqueVariantsMap.set(attrKey, v);
+        }
+      });
+      
+      const copied = Array.from(uniqueVariantsMap.values());
+      
+      // If using matrix mode and creating a new product, populate matrix rows
+      if (useMatrixMode && !editProduct && copied.length > 0) {
+        // Extract unique attribute names from copied variants
+        const attributeNames = Array.from(
+          new Set(
+            copied.flatMap(v => (v.attributes || []).map(a => a.name).filter(Boolean))
+          )
+        );
+        
+        // Update matrix columns
+        const newColumns = attributeNames.length > 0
+          ? attributeNames.map((name, idx) => ({ 
+              id: idx + 1, 
+              attributeName: name, 
+              values: [] 
+            }))
+          : [{ id: 1, attributeName: "", values: [] }];
+        
+        // Convert copied variants to matrix rows
+        const newRows = copied.map((variant, idx) => {
+          const rowId = idx + 1;
+          const values = {};
+          
+          // Map variant attributes to column values
+          newColumns.forEach(col => {
+            const attr = (variant.attributes || []).find(a => a.name === col.attributeName);
+            values[col.id] = attr ? attr.value : "";
+          });
+          
+          return {
+            id: rowId,
+            values: values,
+            price: variant.price || "",
+            sku: variant.sku || "",
+            stock: variant.stock || ""
+          };
+        });
+        
+        setVariantMatrix({
+          columns: newColumns,
+          rows: newRows.length > 0 ? newRows : [{ id: 1, values: { 1: "" }, price: "", sku: "", stock: "" }]
+        });
+        
+        // Clear variants state since we're using matrix mode
+        setVariants([buildEmptyVariant()]);
+        
+        setMessage(`Copied ${copied.length} variant(s) from ${source.name} into matrix. You can now edit them.`);
+      } else {
+        // For non-matrix mode or editing, set variants directly
+        setVariants(copied.length > 0 ? copied : [buildEmptyVariant()]);
+        setMessage(`Copied ${copied.length} variant(s) from ${source.name}. You can now edit them.`);
+        
+        // If using matrix mode while editing, update columns but don't populate rows
+        if (useMatrixMode && editProduct && copied.length > 0) {
+          const attributeNames = Array.from(
+            new Set(
+              copied.flatMap(v => (v.attributes || []).map(a => a.name).filter(Boolean))
+            )
+          );
+          if (attributeNames.length > 0) {
+            setVariantMatrix(prev => ({
+              ...prev,
+              columns: attributeNames.map((name, idx) => ({ 
+                id: idx + 1, 
+                attributeName: name, 
+                values: [] 
+              }))
+            }));
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to copy variants:", err);
+      setMessage(`Failed to copy variants: ${err.message || "Unknown error"}`);
+    }
   };
 
   // Update a field in the variants state locally
@@ -1626,7 +2233,14 @@ const AdminPanel = () => {
                   <div className="product-form-field">
                     <label className="product-field-label">Quick Copy Variants (Optional)</label>
                     <select
-                      onChange={e => copyVariantsFromProduct(e.target.value)}
+                      onChange={async (e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          await copyVariantsFromProduct(value);
+                          // Reset select after copying
+                          e.target.value = "";
+                        }
+                      }}
                       defaultValue=""
                       className="product-select"
                     >
@@ -1643,12 +2257,29 @@ const AdminPanel = () => {
                     <div className="variants-section">
                       <div className="variants-section-header">
                         <h3>Add Variants (Matrix Mode)</h3>
-                        <div style={{ display: "flex", gap: "12px" }}>
+                        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                           <button type="button" className="btn-add-column" onClick={addMatrixColumn}>
                             <FontAwesomeIcon icon={faPlus} /> Add Column
                           </button>
                           <button type="button" className="btn-add-variant" onClick={addMatrixRow}>
                             <FontAwesomeIcon icon={faPlus} /> Add Row
+                          </button>
+                          <label className="btn-upload-csv" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "500", transition: "background 0.2s" }}>
+                            <FontAwesomeIcon icon={faPlus} /> Upload CSV
+                            <input
+                              type="file"
+                              accept=".csv"
+                              style={{ display: "none" }}
+                              onChange={handleCSVUpload}
+                            />
+                          </label>
+                          <button 
+                            type="button" 
+                            className="btn-download-csv" 
+                            onClick={handleCSVDownload}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "500", transition: "background 0.2s", cursor: "pointer" }}
+                          >
+                            <FontAwesomeIcon icon={faDownload} /> Download CSV
                           </button>
                         </div>
                       </div>
@@ -1773,7 +2404,7 @@ const AdminPanel = () => {
                                   </div>
                                 </th>
                               ))}
-                              <th className="matrix-price-header">Price (₹) *</th>
+                              <th className="matrix-price-header">Price ($) *</th>
                               <th className="matrix-sku-header">SKU</th>
                               <th className="matrix-stock-header">Stock</th>
                               <th className="matrix-actions-header">Actions</th>
@@ -1856,12 +2487,29 @@ const AdminPanel = () => {
                     <div className="existing-variants-section">
                       <div className="variants-section-header">
                         <h3>Existing Variants</h3>
-                        <div style={{ display: "flex", gap: "12px" }}>
+                        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                           <button type="button" className="btn-add-column" onClick={addMatrixColumn}>
                             <FontAwesomeIcon icon={faPlus} /> Add Column
                           </button>
                           <button type="button" className="btn-add-variant" onClick={addMatrixRow}>
                             <FontAwesomeIcon icon={faPlus} /> Add Row
+                          </button>
+                          <label className="btn-upload-csv" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "500", transition: "background 0.2s" }}>
+                            <FontAwesomeIcon icon={faPlus} /> Upload CSV
+                            <input
+                              type="file"
+                              accept=".csv"
+                              style={{ display: "none" }}
+                              onChange={handleExistingVariantsCSVUpload}
+                            />
+                          </label>
+                          <button 
+                            type="button" 
+                            className="btn-download-csv" 
+                            onClick={handleExistingVariantsCSVDownload}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", fontSize: "14px", fontWeight: "500", transition: "background 0.2s", cursor: "pointer" }}
+                          >
+                            <FontAwesomeIcon icon={faDownload} /> Download CSV
                           </button>
                         </div>
                       </div>
@@ -1991,7 +2639,7 @@ const AdminPanel = () => {
                                   </div>
                                 </th>
                               ))}
-                              <th className="matrix-price-header">Price (₹)</th>
+                              <th className="matrix-price-header">Price ($)</th>
                               <th className="matrix-sku-header">SKU</th>
                               <th className="matrix-stock-header">Stock</th>
                               <th>Actions</th>
@@ -2130,7 +2778,7 @@ const AdminPanel = () => {
                         />
                       </div>
                       <div className="variant-field-group">
-                        <label className="variant-field-label">Price (₹) *</label>
+                        <label className="variant-field-label">Price ($) *</label>
                         <input
                           type="number"
                           placeholder="0.00"
@@ -2320,7 +2968,7 @@ const AdminPanel = () => {
                               <div className="variant-list-mini">
                                 {p.variants.slice(0, 3).map(v => (
                                   <span key={v.id} className="variant-tag">
-                                    {v.sku} - ₹{v.price}
+                                    {v.sku} - ${v.price}
                                   </span>
                                 ))}
                                 {p.variants.length > 3 && (
@@ -2485,7 +3133,7 @@ const AdminPanel = () => {
                                 )}
                               </div>
                             </td>
-                            <td className="order-total-cell">₹{parseFloat(order.total_amount || order.total || 0).toFixed(2)}</td>
+                            <td className="order-total-cell">${parseFloat(order.total_amount || order.total || 0).toFixed(2)}</td>
                             <td>
                               <select 
                                 className={`status-select status-${order.status?.toLowerCase() || 'pending'}`}
@@ -2743,8 +3391,8 @@ const AdminPanel = () => {
                                       )}
                                       <div className="order-item-qty-price">
                                         <span>Quantity: {item.qty}</span>
-                                        <span>Price: ₹{parseFloat(item.price).toFixed(2)}</span>
-                                        <span className="order-item-total">Subtotal: ₹{itemTotal.toFixed(2)}</span>
+                                        <span>Price: ${parseFloat(item.price).toFixed(2)}</span>
+                                        <span className="order-item-total">Subtotal: ${itemTotal.toFixed(2)}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -2762,11 +3410,11 @@ const AdminPanel = () => {
                           <div className="order-summary">
                             <div className="summary-row">
                               <span className="summary-label">Subtotal:</span>
-                              <span className="summary-value">₹{parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
+                              <span className="summary-value">${parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
                             </div>
                             <div className="summary-row total-row">
                               <span className="summary-label">Total Amount:</span>
-                              <span className="summary-value">₹{parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
+                              <span className="summary-value">${parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
                             </div>
                           </div>
                         </div>

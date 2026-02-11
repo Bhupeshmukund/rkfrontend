@@ -60,7 +60,7 @@ const Footer = () => {
                             <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="YouTube">
                                 <FontAwesomeIcon icon={faYoutube} />
                             </a>
-                            <a href="mailto:rkindustriesexports@gmail.com" className="social-icon" aria-label="Email">
+                            <a href="mailto:sales@rkindustriesexports.com" className="social-icon" aria-label="Email">
                                 <FontAwesomeIcon icon={faEnvelope} />
                             </a>
                         </div>
@@ -108,7 +108,8 @@ const Footer = () => {
                         <h4>Contact Us</h4>
                         <ul className="contact-list">
                             <li>📞 +91-8685933785</li>
-                            <li>✉️ rkindustriesexports@gmail.com</li>
+                            <li>✉️ sales@rkindustriesexports.com </li>
+                            <li>✉️ info@rkindustriesexports.com </li>
                             <li>
                                 📍 MADHUBAN COLONY, Jagadhri, Yamunanagar, Haryana, 135003
                             </li>

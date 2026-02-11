@@ -1385,6 +1385,44 @@
   background: #0284c7;
 }
 
+.btn-upload-csv {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-upload-csv:hover {
+  background: #059669;
+}
+
+.btn-download-csv {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-download-csv:hover {
+  background: #2563eb;
+}
+
 .empty-variants {
   text-align: center;
   padding: 40px 20px;

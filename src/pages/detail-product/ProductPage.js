@@ -5,9 +5,12 @@ import "./ProductPage.css";
 import { api, API_BASE } from "../../api";
 import { addToCart } from "../../utils/cart";
 import { findExactVariant, findNearestVariant, normalizedSelectionFromVariant } from "../../utils/variantMatcher";
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { formatPrice } from "../../utils/currency";
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const { currency, exchangeRate } = useCurrency();
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -342,7 +345,7 @@ const ProductDetails = () => {
 
           {/* DYNAMIC PRICE */}
           <p className="product-price">
-            {selectedVariant ? `₹${selectedVariant.price}` : "Select options"}
+            {selectedVariant ? formatPrice(selectedVariant.price, currency, exchangeRate) : "Select options"}
           </p>
 
           {/* OUT OF STOCK INDICATOR */}
@@ -359,49 +362,49 @@ const ProductDetails = () => {
               <h3 className="variant-info-title">Selected Variant Details</h3>
               <div className="variant-attributes-list">
                 {attributeNames.map((name) => {
-                  const opts = allOptions[name] || [];
-                  const single = opts.length === 1;
-                  const displayValue = selectedAttributes[name] || (single ? opts[0] : '');
-                  return (
-                    <div key={name} className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
-                      <span className="variant-attribute-name">{name}:</span>
-                      {single ? (
-                        <span className="variant-attribute-value">{displayValue}</span>
-                      ) : (
-                        <select value={selectedAttributes[name] || ''} onChange={e => onAttributeChange(name, e.target.value)}>
-                          <option value="">Select {name}</option>
-                          {opts.map(opt => (
+                    const opts = allOptions[name] || [];
+                    const single = opts.length === 1;
+                    const displayValue = selectedAttributes[name] || (single ? opts[0] : '');
+                    return (
+                      <div key={name} className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
+                        <span className="variant-attribute-name">{name}:</span>
+                        {single ? (
+                          <span className="variant-attribute-value">{displayValue}</span>
+                        ) : (
+                          <select value={selectedAttributes[name] || ''} onChange={e => onAttributeChange(name, e.target.value)}>
+                            <option value="">Select {name}</option>
+                            {opts.map(opt => (
                             <option key={opt} value={opt}>
                               {opt}
                             </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  );
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    );
                 })}
               </div>
             </div>
-          ) : (
+                ) : (
             // Fallback for products without attributes but with multiple variants
             product.variants && product.variants.length > 1 && selectedVariant && (
               <div className="selected-variant-info">
                 <h3 className="variant-info-title">Selected Variant Details</h3>
                 <div className="variant-attributes-list">
-                  <div className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
-                    <span className="variant-attribute-name">Variant:</span>
-                    <select value={selectedVariant?.id || ''} onChange={e => {
-                      const v = product.variants.find(vv => vv.id === Number(e.target.value));
-                      setSelectedVariant(v || null);
-                      setSelectedAttributes(v ? (v.attributesObj || {}) : {});
-                    }}>
-                      {product.variants.map(v => (
-                        <option key={v.id} value={v.id}>{v.sku || `Variant ${v.id}`} — ₹{v.price}</option>
-                      ))}
-                    </select>
-                  </div>
+                    <div className="variant-attribute-item" style={{ display: 'flex', alignItems: '', gap: '12px' }}>
+                      <span className="variant-attribute-name">Variant:</span>
+                      <select value={selectedVariant?.id || ''} onChange={e => {
+                        const v = product.variants.find(vv => vv.id === Number(e.target.value));
+                        setSelectedVariant(v || null);
+                        setSelectedAttributes(v ? (v.attributesObj || {}) : {});
+                      }}>
+                        {product.variants.map(v => (
+                          <option key={v.id} value={v.id}>{v.sku || `Variant ${v.id}`} — {formatPrice(v.price, currency, exchangeRate)}</option>
+                        ))}
+                      </select>
+                    </div>
                 </div>
-              </div>
+                        </div>
             )
           )}
 
@@ -427,7 +430,7 @@ const ProductDetails = () => {
               </div>
 
             </div>
-          )}
+          )} 
 
           {/* CART */}
           <div className="cart-row">
@@ -490,33 +493,33 @@ const ProductDetails = () => {
       {/* TABS SECTION - Below product info */}
       <div className="product-tabs-section">
         <div className="product-tabs">
-          <button
-            className={tab === "description" ? "active" : ""}
-            onClick={() => setTab("description")}
-          >
-            DESCRIPTION
-          </button>
-          <button
-            className={tab === "info" ? "active" : ""}
-            onClick={() => setTab("info")}
-          >
-            ADDITIONAL INFORMATION
-          </button>
+            <button
+              className={tab === "description" ? "active" : ""}
+              onClick={() => setTab("description")}
+            >
+              DESCRIPTION
+            </button>
+            <button
+              className={tab === "info" ? "active" : ""}
+              onClick={() => setTab("info")}
+            >
+              ADDITIONAL INFORMATION
+            </button>
         </div>
 
-        {/* TAB CONTENT */}
-        <div className="tab-content">
-          {tab === "description" && (
+          {/* TAB CONTENT */}
+          <div className="tab-content">
+            {tab === "description" && (
             <div className="tab-panel">
               <h3 className="tab-panel-title">DESCRIPTION</h3>
-              <div
+                <div
                 className="product-description"
-                dangerouslySetInnerHTML={{
+                  dangerouslySetInnerHTML={{
                   __html: processHtmlContent(product.description) || "<p>No description available.</p>"
-                }}
-              />
+                  }}
+                />
             </div>
-          )}
+            )}
 
           {tab === "info" && (
             <div className="tab-panel">
@@ -535,7 +538,7 @@ const ProductDetails = () => {
               ) : (
                 <p className="no-info">No additional information available.</p>
               )}
-            </div>
+          </div>
           )}
         </div>
       </div>

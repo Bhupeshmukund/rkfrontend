@@ -4,9 +4,12 @@ import "./Orders.css";
 import { api, API_BASE } from "../../api";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { formatPrice } from "../../utils/currency";
 
 const Orders = () => {
   const navigate = useNavigate();
+  const { currency, exchangeRate } = useCurrency();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -51,9 +54,7 @@ const Orders = () => {
     });
   };
 
-  const formatPrice = (price) => {
-    return `₹${parseFloat(price).toFixed(2)}`;
-  };
+  // Using formatPrice from currency utils
 
   if (loading) {
     return (
@@ -145,7 +146,7 @@ const Orders = () => {
                     <div className="order-preview-footer">
                       <div className="preview-total">
                         <span className="preview-total-label">Total:</span>
-                        <span className="preview-total-amount">{formatPrice(order.total || order.total_amount || 0)}</span>
+                        <span className="preview-total-amount">{formatPrice(order.total || order.total_amount || 0, currency, exchangeRate)}</span>
                       </div>
                       <div className="view-details-hint">Click to view details</div>
                     </div>
@@ -346,8 +347,8 @@ const Orders = () => {
                                       )}
                                       <div className="order-item-qty-price">
                                         <span>Quantity: {item.qty}</span>
-                                        <span>Price: ₹{parseFloat(item.price).toFixed(2)}</span>
-                                        <span className="order-item-total">Subtotal: ₹{itemTotal.toFixed(2)}</span>
+                                        <span>Price: {formatPrice(parseFloat(item.price), currency, exchangeRate)}</span>
+                                        <span className="order-item-total">Subtotal: {formatPrice(itemTotal, currency, exchangeRate)}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -365,11 +366,11 @@ const Orders = () => {
                           <div className="order-summary">
                             <div className="summary-row">
                               <span className="summary-label">Subtotal:</span>
-                              <span className="summary-value">₹{parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
+                              <span className="summary-value">{formatPrice(parseFloat(selectedOrder.total_amount || selectedOrder.total || 0), currency, exchangeRate)}</span>
                             </div>
                             <div className="summary-row total-row">
                               <span className="summary-label">Total Amount:</span>
-                              <span className="summary-value">₹{parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
+                              <span className="summary-value">{formatPrice(parseFloat(selectedOrder.total_amount || selectedOrder.total || 0), currency, exchangeRate)}</span>
                             </div>
                           </div>
                         </div>

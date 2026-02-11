@@ -4,8 +4,11 @@ import { api, API_BASE } from "../../api";
 import { addToCart } from "../../utils/cart";
 import { findExactVariant, normalizedSelectionFromVariant } from "../../utils/variantMatcher";
 import "./ProductDetailsModal.css";
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { formatPrice } from "../../utils/currency";
 
 const ProductDetailsModal = ({ productId, onClose }) => {
+  const { currency, exchangeRate } = useCurrency();
   const [product, setProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [selectedAttributes, setSelectedAttributes] = useState({});
@@ -250,7 +253,7 @@ const ProductDetailsModal = ({ productId, onClose }) => {
             <h1 className="modal-product-title">{product.name}</h1>
 
             <p className="modal-product-price">
-              {selectedVariant ? `₹${selectedVariant.price}` : "Select options"}
+              {selectedVariant ? formatPrice(selectedVariant.price, currency, exchangeRate) : "Select options"}
             </p>
 
             {selectedVariant && Number(selectedVariant.stock) === 0 && (

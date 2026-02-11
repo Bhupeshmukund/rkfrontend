@@ -5,9 +5,12 @@ import "./Product.css";
 import { api, API_BASE } from "../../api";
 import { addToCart } from "../../utils/cart";
 import ProductDetailsModal from "../../components/ProductDetailsModal/ProductDetailsModal";
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { formatPriceRange } from "../../utils/currency";
 
 const CategoryProducts = () => {
   const { slug } = useParams();
+  const { currency, exchangeRate } = useCurrency();
 
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
@@ -190,7 +193,13 @@ const CategoryProducts = () => {
           >
             <img src={image} alt={product.name} />
             <h3>{product.name}</h3>
-            <p className="price">{product.priceRange}</p>
+            <p className="price">
+              {product.priceRange 
+                ? (typeof product.priceRange === 'object' && product.priceRange.min !== undefined
+                  ? formatPriceRange(product.priceRange.min, product.priceRange.max, currency, exchangeRate)
+                  : product.priceRange.replace(/USDT/gi, '').trim())
+                : ''}
+            </p>
           </Link>
           
           {/* Hover Button at Bottom */}

@@ -6,8 +6,11 @@ import { getCartTotal, getCartItemsCount } from "../../utils/cart";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPhone, faEnvelope, faShoppingCart, faSearch, faUser, faBars, faTimes, faChevronDown, faSignInAlt, faSignOutAlt, faUserCircle, faReceipt } from '@fortawesome/free-solid-svg-icons';
 import logo from '../../assets/logo.png';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import { formatPrice } from '../../utils/currency';
 
 const Header = () => {
+    const { currency, exchangeRate } = useCurrency();
 
     const [categories, setCategories] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -197,7 +200,7 @@ const Header = () => {
                     <span className="divider">|</span>
                     <div className="contact-item">
                         <FontAwesomeIcon icon={faEnvelope} className="contact-icon" />
-                        <a href="mailto:rkindustriesexports@gmail.com" className="contact-link">rkindustriesexports@gmail.com</a>
+                        <a href="mailto:sales@rkindustriesexports.com" className="contact-link">sales@rkindustriesexports.com</a>
                     </div>
                 </div>
                 <div className="top-right">
@@ -236,7 +239,7 @@ const Header = () => {
 
                 <div className="header-actions">
                     <Link to="/cart" className="cart">
-                        <FontAwesomeIcon icon={faShoppingCart} /> ₹{cartTotal.toFixed(2)} <span className="badge">{cartItemsCount}</span>
+                        <FontAwesomeIcon icon={faShoppingCart} /> {formatPrice(cartTotal, currency, exchangeRate)} <span className="badge">{cartItemsCount}</span>
                     </Link>
                     <div className="search" ref={searchRef}>
                         <form onSubmit={handleSearchSubmit} style={{ display: 'flex' }}>
@@ -403,7 +406,7 @@ const Header = () => {
                         <span className="mobile-cart-icon"><FontAwesomeIcon icon={faShoppingCart} /></span>
                         <div className="mobile-cart-info">
                             <span className="mobile-cart-text">View Cart</span>
-                            <span className="mobile-cart-total">₹{cartTotal.toFixed(2)}</span>
+                            <span className="mobile-cart-total">{formatPrice(cartTotal, currency, exchangeRate)}</span>
                         </div>
                         <span className="mobile-cart-badge">{cartItemsCount}</span>
                     </div>

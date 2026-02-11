@@ -94,7 +94,7 @@ export const api = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ amount, currency: "INR" })
+      body: JSON.stringify({ amount, currency: "USD" })
     }).then(handle);
   },
 

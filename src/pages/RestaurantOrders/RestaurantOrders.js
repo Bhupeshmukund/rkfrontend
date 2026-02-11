@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../api";
 import "./RestaurantOrders.css";
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { formatPrice } from "../../utils/currency";
 
 const formatDate = (isoString) => {
   if (!isoString) return "-";
@@ -18,7 +20,7 @@ const normalizeItems = (items) => {
         const qty = itm.quantity ?? itm.qty ?? 1;
         const price = itm.price;
         return {
-          label: `${qty} x ${name}${price !== undefined ? ` (₹${price})` : ""}`,
+          label: `${qty} x ${name}${price !== undefined ? ` ($${price})` : ""}`,
           key: idx
         };
       }
@@ -29,6 +31,7 @@ const normalizeItems = (items) => {
 };
 
 const RestaurantOrders = () => {
+  const { currency, exchangeRate } = useCurrency();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -90,7 +93,7 @@ const RestaurantOrders = () => {
                 </tr>
               )}
               {orders.map((order) => {
-                const items = normalizeItems(order.order_items);
+                const items = normalizeItems(order.order_items, currency, exchangeRate);
                 return (
                   <tr key={order.id}>
                     <td>#{order.id}</td>
@@ -102,7 +105,7 @@ const RestaurantOrders = () => {
                         ))}
                       </ul>
                     </td>
-                    <td>₹{order.amount || "-"}</td>
+                    <td>{order.amount ? formatPrice(order.amount, currency, exchangeRate) : "-"}</td>
                     <td>{order.collection || "-"}</td>
                     <td>
                       <span className={`ro-status ro-status-${order.status || "pending"}`}>

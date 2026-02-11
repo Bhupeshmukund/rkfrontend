@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import "./ShoppingCart.css";
 import { getCart, updateCartItemQty, removeFromCart, getCartTotal } from "../../utils/cart";
 import { API_BASE } from "../../api";
+import { useCurrency } from "../../contexts/CurrencyContext";
+import { formatPrice } from "../../utils/currency";
 
 const ShoppingCart = () => {
   const navigate = useNavigate();
+  const { currency, exchangeRate } = useCurrency();
   const [cart, setCart] = useState([]);
 
   useEffect(() => {
@@ -95,7 +98,7 @@ const ShoppingCart = () => {
                   </div>
 
                   <div className="price">
-                    {item.qty} x ₹{parseFloat(item.price).toFixed(2)}
+                    {item.qty} x {formatPrice(parseFloat(item.price), currency, exchangeRate)}
                   </div>
                 </div>
               );
@@ -110,14 +113,14 @@ const ShoppingCart = () => {
 
           <div className="row">
             <span>Subtotal</span>
-            <span>₹{subtotal.toFixed(2)}</span>
+            <span>{formatPrice(subtotal, currency, exchangeRate)}</span>
           </div>
 
           <div className="divider"></div>
 
           <div className="row total">
             <span>Total</span>
-            <span>₹{total.toFixed(2)}</span>
+            <span>{formatPrice(total, currency, exchangeRate)}</span>
           </div>
 
           <input
