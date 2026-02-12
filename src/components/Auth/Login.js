@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./Auth.css";
 import { api } from "../../api";
@@ -14,6 +14,9 @@ const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [requiresVerification, setRequiresVerification] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -45,11 +48,56 @@ const Login = () => {
       // Redirect to homepage or intended page
       navigate("/");
     } catch (err) {
-      setError(err.message || "Login failed. Please check your credentials.");
+      // Check if error is due to unverified email
+      if (err.requiresVerification || err.message?.includes("verify your email")) {
+        setRequiresVerification(true);
+        setError(err.message || "Please verify your email before logging in. Check your inbox for the verification link.");
+      } else {
+        setError(err.message || "Login failed. Please check your credentials.");
+        setRequiresVerification(false);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    if (resendCooldown > 0 || !formData.email) return;
+
+    setLoading(true);
+    setError("");
+    setResendSuccess("");
+
+    try {
+      await api.resendVerification(formData.email);
+      setResendSuccess("Verification email sent successfully! Please check your inbox.");
+      setResendCooldown(60); // Start 60 second cooldown
+      setError(""); // Clear any errors
+    } catch (err) {
+      if (err.cooldown) {
+        setResendCooldown(err.cooldown);
+      }
+      setError(err.message || "Failed to resend verification email.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setInterval(() => {
+        setResendCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [resendCooldown]);
 
   return (
     <div className="auth-wrapper">
@@ -58,6 +106,43 @@ const Login = () => {
 
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
+          {resendSuccess && <div className="success-message" style={{ background: '#d4edda', color: '#155724', padding: '12px', borderRadius: '4px', marginBottom: '15px' }}>{resendSuccess}</div>}
+          
+          {requiresVerification && (
+            <div style={{ 
+              background: '#fff3cd', 
+              border: '1px solid #ffc107', 
+              borderRadius: '4px', 
+              padding: '15px', 
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              <p style={{ margin: '0 0 10px 0', color: '#856404' }}>
+                Your email is not verified. Please check your inbox for the verification link.
+              </p>
+              <button 
+                type="button" 
+                onClick={handleResendVerification}
+                disabled={loading || resendCooldown > 0}
+                style={{
+                  background: resendCooldown > 0 ? '#6c757d' : '#00ACEE',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 20px',
+                  borderRadius: '4px',
+                  cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                {loading 
+                  ? "Sending..." 
+                  : resendCooldown > 0 
+                    ? `Resend in ${resendCooldown}s` 
+                    : "Resend Verification Link"}
+              </button>
+            </div>
+          )}
           
           <label>Email:</label>
           <input 
@@ -97,7 +182,7 @@ const Login = () => {
 
         <div className="auth-links">
           <p>
-            Forgot <a href="#">Username / Password?</a>
+            <Link to="/forgot-password">Forgot Password?</Link>
           </p>
           <p>
             Don't have an account? <Link to="/signup">Sign up</Link>

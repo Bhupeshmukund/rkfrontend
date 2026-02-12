@@ -21,6 +21,9 @@ import ShoppingCart from './pages/Cart/ShoppingCart';
 import Checkout from './pages/Checkout/Checkout';
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
+import VerifyEmail from './components/Auth/VerifyEmail';
+import ForgotPassword from './components/Auth/ForgotPassword';
+import ResetPassword from './components/Auth/ResetPassword';
 import Profile from './pages/Profile/Profile';
 import Orders from './pages/Orders/Orders';
 import RestaurantOrders from './pages/RestaurantOrders/RestaurantOrders';
@@ -43,6 +46,9 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/restaurant-orders" element={<RestaurantOrders />} />

@@ -6,6 +6,7 @@ import { api } from "../../api";
 import { Country, State, City } from "country-state-city";
 import { useCurrency } from "../../contexts/CurrencyContext";
 import { formatPrice } from "../../utils/currency";
+import paymentQR from "../../assets/payment_qr.jpg";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -369,8 +370,11 @@ const Checkout = () => {
     // Handle Razorpay payment
     if (billing.payment === "razorpay") {
       try {
+        // Determine currency based on country (INR for India, USD for others)
+        const orderCurrency = billing.country === "India" ? "INR" : "USD";
+        
         // Create Razorpay order
-        const razorpayOrderResponse = await api.createRazorpayOrder(totalAmount);
+        const razorpayOrderResponse = await api.createRazorpayOrder(totalAmount, orderCurrency);
         
         if (!razorpayOrderResponse.orderId) {
           throw new Error("Failed to create Razorpay order");
@@ -421,6 +425,18 @@ const Checkout = () => {
             }
           }
         };
+
+        // Enable all payment methods for Indian orders
+        if (billing.country === "India") {
+          options.method = {
+            netbanking: true,
+            card: true,
+            upi: true,
+            wallet: true,
+            emi: true,
+            paylater: true
+          };
+        }
 
         const razorpay = new window.Razorpay(options);
         razorpay.on("payment.failed", (response) => {
@@ -808,20 +824,47 @@ const Checkout = () => {
               <div className="bank-details">
                 <h4 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>Bank Details:</h4>
                 <div className="bank-info-row">
-                  <span className="bank-label">Bank Name:</span>
-                  <span className="bank-value">State Bank of India</span>
+                  <span className="bank-label">Bank Holder Name:</span>
+                  <span className="bank-value">RK INDUSTRIES</span>
                 </div>
                 <div className="bank-info-row">
-                  <span className="bank-label">Account Holder Name:</span>
-                  <span className="bank-value">RK Industries</span>
+                  <span className="bank-label">Bank Name:</span>
+                  <span className="bank-value">State Bank of India, Jagadhri yamunanagar</span>
                 </div>
                 <div className="bank-info-row">
                   <span className="bank-label">Account Number:</span>
-                  <span className="bank-value">1234567890123456</span>
+                  <span className="bank-value">39135298801</span>
                 </div>
                 <div className="bank-info-row">
                   <span className="bank-label">IFSC Code:</span>
-                  <span className="bank-value">SBIN0001234</span>
+                  <span className="bank-value">SBIN0000654</span>
+                </div>
+                <div className="bank-info-row">
+                  <span className="bank-label">Swift Code (Foreign Transactions):</span>
+                  <span className="bank-value">SBININBB437</span>
+                </div>
+              </div>
+
+              <div className="qr-code-section" style={{ marginTop: '20px', textAlign: 'center' }}>
+                <h4 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600' }}>Scan & Pay</h4>
+                <div className="qr-code-container" style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  padding: '15px',
+                  background: '#ffffff',
+                  border: '2px solid #e0e0e0',
+                  borderRadius: '8px'
+                }}>
+                  <img 
+                    src={paymentQR} 
+                    alt="Scan & Pay QR Code" 
+                    style={{ 
+                      maxWidth: '250px', 
+                      width: '100%', 
+                      height: 'auto',
+                      borderRadius: '4px'
+                    }}
+                  />
                 </div>
               </div>
 

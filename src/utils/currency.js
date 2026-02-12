@@ -95,10 +95,14 @@ export const formatPrice = (price, currency, exchangeRate = 83) => {
   
   if (currency === 'INR') {
     const inrPrice = numPrice * exchangeRate;
-    return `₹${inrPrice.toFixed(2)}`;
+    // Round up to nearest integer
+    const roundedPrice = Math.ceil(inrPrice);
+    return `₹${roundedPrice}`;
   }
   
-  return `$${numPrice.toFixed(2)}`;
+  // Round up to nearest integer
+  const roundedPrice = Math.ceil(numPrice);
+  return `$${roundedPrice}`;
 };
 
 /**
@@ -117,8 +121,14 @@ export const formatPriceRange = (min, max, currency, exchangeRate = 83) => {
   if (currency === 'INR') {
     const inrMin = min * exchangeRate;
     const inrMax = max * exchangeRate;
-    return `₹${inrMin.toFixed(2)} - ₹${inrMax.toFixed(2)}`;
+    // Round up to nearest integer
+    const roundedMin = Math.ceil(inrMin);
+    const roundedMax = Math.ceil(inrMax);
+    return `₹${roundedMin} - ₹${roundedMax}`;
   }
   
-  return `$${min.toFixed(2)} - $${max.toFixed(2)}`;
+  // Round up to nearest integer
+  const roundedMin = Math.ceil(min);
+  const roundedMax = Math.ceil(max);
+  return `$${roundedMin} - $${roundedMax}`;
 };

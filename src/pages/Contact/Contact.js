@@ -195,7 +195,7 @@ const Contact = () => {
           </div>
           <div>
             <h4>Phone</h4>
-            <p>+91 8685933785 / +91 9817000000</p>
+            <p>+91 8685933785 / +91 9896099653</p>
           </div>
         </div>
 
@@ -205,7 +205,7 @@ const Contact = () => {
           </div>
           <div>
             <h4>Address</h4>
-            <p> MADHUBAN COLONY , JAGADHRI, MADHUBAN COLONY , TEJLI GATE, MANAN INTERNATIONAL, Jagadhri, Yamunanagar, Haryana, 135003</p>
+            <p>MADHUBAN COLONY, Jagadhri, Yamunanagar, Haryana, 135003</p>
           </div>
         </div>
       </div>

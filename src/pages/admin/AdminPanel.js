@@ -69,6 +69,7 @@ const AdminPanel = () => {
   const [manageCategoryFilter, setManageCategoryFilter] = useState("");
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  const [existingProductImage, setExistingProductImage] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [orderSearch, setOrderSearch] = useState("");
@@ -1476,6 +1477,15 @@ const AdminPanel = () => {
       }
 
       setEditProduct(product);
+      
+      // Set existing product image URL
+      const productImageUrl = product.image?.startsWith("http")
+        ? product.image
+        : product.image
+          ? `${API_BASE}${product.image}`
+          : null;
+      setExistingProductImage(productImageUrl);
+      
       setProductForm({
         categoryName: product.categoryName || "",
         name: product.name || "",
@@ -1489,6 +1499,14 @@ const AdminPanel = () => {
         const res = await api.getProductForEdit(product.id);
         const serverProduct = res.product || {};
         const serverVariants = res.variants || [];
+        
+        // Update existing product image URL from server data (overwrite with server data)
+        if (serverProduct.image) {
+          const serverImageUrl = serverProduct.image?.startsWith("http")
+            ? serverProduct.image
+            : `${API_BASE}${serverProduct.image}`;
+          setExistingProductImage(serverImageUrl);
+        }
 
         // Normalize variants for the UI: map attributes object to array of {name,value}
         const normalized = serverVariants.map(v => ({
@@ -1619,6 +1637,7 @@ const AdminPanel = () => {
 
       setMessage(`Product updated! ${createdCount} variant(s) created, ${updatedCount} updated.`);
       setEditProduct(null);
+      setExistingProductImage(null);
       setProductForm({
         categoryName: "",
         name: "",
@@ -2180,6 +2199,40 @@ const AdminPanel = () => {
                           >
                             <FontAwesomeIcon icon={faTimes} />
                           </button>
+                        </div>
+                      ) : existingProductImage && editProduct ? (
+                        <div className="product-image-preview">
+                          <img
+                            src={existingProductImage}
+                            alt="Current product image"
+                            className="preview-product-image"
+                          />
+                          <button
+                            type="button"
+                            className="remove-product-image-btn"
+                            onClick={() => {
+                              setExistingProductImage(null);
+                              document.getElementById('product-image-input').value = '';
+                            }}
+                            title="Remove current image (will be removed on save)"
+                            style={{ background: 'rgba(255, 193, 7, 0.95)' }}
+                          >
+                            <FontAwesomeIcon icon={faTimes} />
+                          </button>
+                          <div style={{ 
+                            position: 'absolute', 
+                            bottom: '10px', 
+                            left: '10px', 
+                            right: '10px', 
+                            background: 'rgba(0, 0, 0, 0.7)', 
+                            color: 'white', 
+                            padding: '8px', 
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            textAlign: 'center'
+                          }}>
+                            Current image - Upload new to replace
+                          </div>
                         </div>
                       ) : (
                         <label htmlFor="product-image-input" className="product-image-upload-label">
@@ -2979,6 +3032,7 @@ const AdminPanel = () => {
                       type="button"
                       onClick={() => {
                         setEditProduct(null);
+                        setExistingProductImage(null);
                         setProductForm({
                           categoryName: "",
                           name: "",
@@ -3232,7 +3286,7 @@ const AdminPanel = () => {
                                 )}
                               </div>
                             </td>
-                            <td className="order-total-cell">${parseFloat(order.total_amount || order.total || 0).toFixed(2)}</td>
+                            <td className="order-total-cell">${Math.ceil(parseFloat(order.total_amount || order.total || 0))}</td>
                             <td>
                               <select 
                                 className={`status-select status-${order.status?.toLowerCase() || 'pending'}`}
@@ -3490,8 +3544,8 @@ const AdminPanel = () => {
                                       )}
                                       <div className="order-item-qty-price">
                                         <span>Quantity: {item.qty}</span>
-                                        <span>Price: ${parseFloat(item.price).toFixed(2)}</span>
-                                        <span className="order-item-total">Subtotal: ${itemTotal.toFixed(2)}</span>
+                                        <span>Price: ${Math.ceil(parseFloat(item.price))}</span>
+                                        <span className="order-item-total">Subtotal: ${Math.ceil(itemTotal)}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -3509,11 +3563,11 @@ const AdminPanel = () => {
                           <div className="order-summary">
                             <div className="summary-row">
                               <span className="summary-label">Subtotal:</span>
-                              <span className="summary-value">${parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
+                              <span className="summary-value">${Math.ceil(parseFloat(selectedOrder.total_amount || selectedOrder.total || 0))}</span>
                             </div>
                             <div className="summary-row total-row">
                               <span className="summary-label">Total Amount:</span>
-                              <span className="summary-value">${parseFloat(selectedOrder.total_amount || selectedOrder.total || 0).toFixed(2)}</span>
+                              <span className="summary-value">${Math.ceil(parseFloat(selectedOrder.total_amount || selectedOrder.total || 0))}</span>
                             </div>
                           </div>
                         </div>

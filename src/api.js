@@ -7,13 +7,22 @@ const API_BASE =
 const handle = async response => {
   if (!response.ok) {
     let errorMessage = "Request failed";
+    let errorData = {};
     try {
-      const errorData = await response.json();
+      errorData = await response.json();
       errorMessage = errorData.error || errorData.message || errorMessage;
     } catch {
       errorMessage = await response.text();
     }
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage);
+    // Preserve additional error properties like requiresVerification
+    if (errorData.requiresVerification !== undefined) {
+      error.requiresVerification = errorData.requiresVerification;
+    }
+    if (errorData.cooldown !== undefined) {
+      error.cooldown = errorData.cooldown;
+    }
+    throw error;
   }
   return response.json();
 };
@@ -45,6 +54,27 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password })
+    }).then(handle),
+
+  resendVerification: (email) =>
+    fetch(`${API_BASE}/api/public/resend-verification`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    }).then(handle),
+
+  forgotPassword: (email) =>
+    fetch(`${API_BASE}/api/public/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    }).then(handle),
+
+  resetPassword: (token, newPassword) =>
+    fetch(`${API_BASE}/api/public/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword })
     }).then(handle),
 
   updatePassword: (currentPassword, newPassword) => {
@@ -86,7 +116,7 @@ export const api = {
   },
 
   // Razorpay payment
-  createRazorpayOrder: (amount) => {
+  createRazorpayOrder: (amount, currency = "USD") => {
     const token = localStorage.getItem("authToken");
     return fetch(`${API_BASE}/api/public/create-razorpay-order`, {
       method: "POST",
@@ -94,7 +124,7 @@ export const api = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ amount, currency: "USD" })
+      body: JSON.stringify({ amount, currency })
     }).then(handle);
   },
 
