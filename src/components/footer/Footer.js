@@ -3,9 +3,10 @@ import './Footer.css'
 import { Link } from 'react-router-dom';
 import { api } from '../../api';
 import logo from '../../assets/logo.png';
+import logoWebp from '../../assets/logo.webp';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faInstagram, faFacebook, faYoutube } from '@fortawesome/free-brands-svg-icons';
-import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import { faInstagram, faFacebook, faYoutube, faXTwitter } from '@fortawesome/free-brands-svg-icons';
+import { faEnvelope, faPhone, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 
 const Footer = () => {
     const [categories, setCategories] = useState([]);
@@ -48,21 +49,33 @@ const Footer = () => {
 
                     <div className="footer-col footer-brand">
                         <Link to="/" className="footer-logo-link" onClick={handleLinkClick}>
-                            <img src={logo} alt="RK Industries" className="footer-logo" />
+                            <picture>
+                                <source srcSet={logoWebp} type="image/webp" />
+                                <img 
+                                    src={logo} 
+                                    alt="RK Industries" 
+                                    className="footer-logo"
+                                    loading="lazy"
+                                    decoding="async"
+                                    width="150"
+                                    height="50"
+                                />
+                            </picture>
                         </Link>
                         <div className="social-media-icons">
-                            <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram">
+                            <a href="https://www.instagram.com/rkindustries851/" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Instagram">
                                 <FontAwesomeIcon icon={faInstagram} />
                             </a>
-                            <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Facebook">
+                            <a href="https://www.facebook.com/rkindustries851/" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Facebook">
                                 <FontAwesomeIcon icon={faFacebook} />
                             </a>
-                            <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="YouTube">
+                            <a href="https://x.com/RKINDUSTRIES851" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="Twitter/X">
+                                <FontAwesomeIcon icon={faXTwitter} />
+                            </a>
+                            <a href="https://youtu.be/4B186pmG3Y4?si=AjrDAJA9L3tIcwE_" target="_blank" rel="noopener noreferrer" className="social-icon" aria-label="YouTube">
                                 <FontAwesomeIcon icon={faYoutube} />
                             </a>
-                            <a href="mailto:sales@rkindustriesexports.com" className="social-icon" aria-label="Email">
-                                <FontAwesomeIcon icon={faEnvelope} />
-                            </a>
+                        
                         </div>
                     </div>
 
@@ -71,8 +84,21 @@ const Footer = () => {
                         <ul>
                             <li><Link to="/" onClick={handleLinkClick}>Home</Link></li>
                             <li><Link to="/about" onClick={handleLinkClick}>About Us</Link></li>
-                            <li><Link to="/bank-details" onClick={handleLinkClick}>Bank Details</Link></li>
+                            <li><Link to="/" onClick={handleLinkClick}>Products</Link></li>
+                            <li><Link to="/contact" onClick={handleLinkClick}>Export Services</Link></li>
+                            <li><Link to="/dealership" onClick={handleLinkClick}>Become a Distributor</Link></li>
                             <li><Link to="/contact" onClick={handleLinkClick}>Contact Us</Link></li>
+                            <li><a href="/catalogue.pdf" target="_blank" rel="noopener noreferrer" onClick={handleLinkClick}>Download Catalogue</a></li>
+                        </ul>
+                    </div>
+
+                    <div className="footer-col">
+                        <h4>Policy Links</h4>
+                        <ul>
+                            <li><Link to="/privacy-policy" onClick={handleLinkClick}>Privacy Policy</Link></li>
+                            <li><Link to="/refund-policy" onClick={handleLinkClick}>Refund & Return Policy</Link></li>
+                            <li><Link to="/terms-conditions" onClick={handleLinkClick}>Terms & Conditions</Link></li>
+                            <li><Link to="/shipping-policy" onClick={handleLinkClick}>International Shipping Policy</Link></li>
                         </ul>
                     </div>
 
@@ -107,11 +133,23 @@ const Footer = () => {
                     <div className="footer-col">
                         <h4>Contact Us</h4>
                         <ul className="contact-list">
-                            <li>📞 +91-8685933785</li>
-                            <li>✉️ sales@rkindustriesexports.com </li>
-                            <li>✉️ info@rkindustriesexports.com </li>
                             <li>
-                                📍 MADHUBAN COLONY, Jagadhri, Yamunanagar, Haryana, 135003
+                                <FontAwesomeIcon icon={faPhone} style={{ marginRight: '8px', color: '#00ACEE' }} />
+                                +91-8685933785 <br></br> +91-9896099653
+                            </li>
+                            <li className="email-row">
+                                <a href="mailto:sales@rkindustriesexports.com">
+                                    <FontAwesomeIcon icon={faEnvelope} style={{ marginRight: '8px', color: '#00ACEE' }} />
+                                    sales@rkindustriesexports.com
+                                </a>
+                                <a href="mailto:info@rkindustriesexports.com">
+                                    <FontAwesomeIcon icon={faEnvelope} style={{ marginLeft: '0px', marginRight: '8px', color: '#00ACEE' }} />
+                                    info@rkindustriesexports.com
+                                </a>
+                            </li>
+                            <li>
+                                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ marginRight: '8px', color: '#00ACEE' }} />
+                                MADHUBAN COLONY, Jagadhri, Yamunanagar, Haryana, 135003
                             </li>
                         </ul>
                     </div>

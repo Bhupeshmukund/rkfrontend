@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import './Homepage.css'
 import main3 from '../../assets/main3.png'
+import main3Webp from '../../assets/main3.webp'
 import about from '../../assets/about.jpg'
+import aboutWebp from '../../assets/about.webp'
 import { useNavigate } from 'react-router-dom';
 import { api, API_BASE } from "../../api";
-import FloatingVideo from '../../components/FloatingVideo/FloatingVideo';
 
 const Homepage = () => {
     const navigate = useNavigate();
@@ -58,7 +59,17 @@ const Homepage = () => {
                     </div>
 
                     <div className="lab-banner-image">
-                        <img src={main3} alt="Laboratory Equipment" />
+                        <picture>
+                            <source srcSet={main3Webp} type="image/webp" />
+                            <img 
+                                src={main3} 
+                                alt="Laboratory Equipment" 
+                                loading="eager"
+                                decoding="async"
+                                width="600"
+                                height="475"
+                            />
+                        </picture>
                     </div>
 
                 </div>
@@ -86,7 +97,12 @@ const Homepage = () => {
                                     onClick={() => navigate(`/category/${cat.slug}`)}
                                 >
                                     <div className="product-image-wrapper">
-                                        <img src={image} alt={cat.name} />
+                                        <img 
+                                            src={image} 
+                                            alt={cat.name}
+                                            loading="lazy"
+                                            decoding="async"
+                                        />
                                         <div className="product-overlay"></div>
                                     </div>
                                     <div className="product-label">
@@ -107,10 +123,15 @@ const Homepage = () => {
                             <p>Years Experience of Laboratory</p>
                         </div>
 
-                        <img
-                            src={about}
-                            alt="Laboratory Microscope"
-                        />
+                        <picture>
+                            <source srcSet={aboutWebp} type="image/webp" />
+                            <img
+                                src={about}
+                                alt="Laboratory Microscope"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        </picture>
                     </div>
 
                     <div className="about-content">
@@ -123,17 +144,17 @@ const Homepage = () => {
 
                         <p className="about-desc">
                             RK INDUSTRIES is a leading scientific instrument manufacturer
-                            and supplier in India with over 40 years of experience. We provide
+                            and supplier in India with over 75 years of experience. We provide
                             high-quality laboratory equipment at competitive prices, serving schools,
                             colleges, hospitals, research labs, and industries nationwide.
                         </p>
 
                         <div className="about-features">
                             <div className="feature">
-                                <h4>MEDICAL LABORATORY TECHNICIAN</h4>
+                                <h3>MEDICAL LABORATORY TECHNICIAN</h3>
                             </div>
                             <div className="feature">
-                                <h4>ISO CERTIFIED 9001 : 2015</h4>
+                                <h3>ISO CERTIFIED 9001 : 2015</h3>
                             </div>
                         </div>
 
@@ -154,9 +175,6 @@ const Homepage = () => {
 
                 </div>
             </section>
-
-            {/* Floating Video */}
-            <FloatingVideo videoUrl="https://www.youtube.com/watch?si=AjrDAJA9L3tIcwE_&v=4B186pmG3Y4&feature=youtu.be" />
             
         </>
     )

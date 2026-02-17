@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import "./AdminPanel.css";
 import { api, API_BASE } from "../../api";
-import { Editor } from "@tinymce/tinymce-react";
+// Lazy load TinyMCE Editor to reduce initial bundle size
+import LazyTinyMCE from "../../components/LazyTinyMCE/LazyTinyMCE";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faEdit, faPlus, faSearch, faBox, faList, faReceipt, faCheck, faTimes, faExclamationTriangle, faDownload } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faEdit, faPlus, faSearch, faBox, faList, faReceipt, faCheck, faTimes, faExclamationTriangle, faDownload, faArrowUp, faPercent } from '@fortawesome/free-solid-svg-icons';
 
 const TINYMCE_KEY =
   process.env.REACT_APP_TINYMCE_API_KEY ||
@@ -25,6 +27,12 @@ const AdminPanel = () => {
   const [categoryForm, setCategoryForm] = useState({
     name: "",
     image: null
+  });
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editCategoryForm, setEditCategoryForm] = useState({
+    name: "",
+    image: null,
+    existingImage: null
   });
   const [productForm, setProductForm] = useState({
     categoryName: "",
@@ -51,7 +59,7 @@ const AdminPanel = () => {
   const [confirmIgnoreEmpty, setConfirmIgnoreEmpty] = useState(false);
   const [selectedVariantIds, setSelectedVariantIds] = useState([]);
   const [deletingVariants, setDeletingVariants] = useState(false);
-  const [message, setMessage] = useState("");
+  // Removed message state - using toast notifications instead
   const [activeTab, setActiveTab] = useState("category");
 
   // Utility to determine whether a variant has meaningful data to submit
@@ -78,6 +86,11 @@ const AdminPanel = () => {
   const [pendingCancelOrder, setPendingCancelOrder] = useState(null);
   const [cancellationReason, setCancellationReason] = useState("");
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [priceIncreasePercentage, setPriceIncreasePercentage] = useState("");
+  const [priceIncreaseType, setPriceIncreaseType] = useState("all"); // "all", "product", "category"
+  const [selectedProductForPriceIncrease, setSelectedProductForPriceIncrease] = useState("");
+  const [selectedCategoryForPriceIncrease, setSelectedCategoryForPriceIncrease] = useState("");
+  const [increasingPrices, setIncreasingPrices] = useState(false);
 
   const loadCategories = () => {
     api.getCategories()
@@ -110,7 +123,7 @@ const AdminPanel = () => {
           loadOrders();
         } else {
           setIsAdmin(false);
-          setMessage("Access denied. You do not have admin privileges.");
+          toast.error("Access denied. You do not have admin privileges.");
           // Redirect after showing message
           setTimeout(() => {
             navigate("/", { replace: true });
@@ -119,7 +132,7 @@ const AdminPanel = () => {
       } catch (err) {
         console.error("Admin check failed:", err);
         setIsAdmin(false);
-        setMessage("Access denied. Unable to verify admin status.");
+        toast.error("Access denied. Unable to verify admin status.");
         setTimeout(() => {
           navigate("/", { replace: true });
         }, 2000);
@@ -139,7 +152,7 @@ const AdminPanel = () => {
       })
       .catch(err => {
         console.error("Load orders failed", err);
-        setMessage(err.message || "Failed to load orders.");
+        toast.error(err.message || "Failed to load orders.");
       })
       .finally(() => {
         setLoadingOrders(false);
@@ -248,22 +261,80 @@ const AdminPanel = () => {
   const handleCategorySubmit = async e => {
     e.preventDefault();
     if (!categoryForm.name || !categoryForm.image) {
-      setMessage("Category name and image are required.");
+      toast.error("Category name and image are required.");
       return;
     }
+    
+    // Check file size (1MB = 1 * 1024 * 1024 bytes)
+    const maxSize = 1 * 1024 * 1024; // 1MB
+    if (categoryForm.image && categoryForm.image.size > maxSize) {
+      toast.error(`Category image size exceeds 1MB limit. Please choose a smaller image.`);
+      return;
+    }
+    
     setSavingCategory(true);
-    setMessage("");
 
     try {
       const formData = new FormData();
       formData.append("name", categoryForm.name);
       formData.append("image", categoryForm.image);
       await api.createCategory(formData);
-      setMessage("Category created.");
+      toast.success("Category created.");
       setCategoryForm({ name: "", image: null });
       loadCategories();
     } catch (err) {
-      setMessage(err.message || "Failed to create category.");
+      toast.error(err.message || "Failed to create category.");
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const handleEditCategory = (category) => {
+    setEditingCategory(category.id);
+    setEditCategoryForm({
+      name: category.name,
+      image: null,
+      existingImage: category.image
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategory(null);
+    setEditCategoryForm({
+      name: "",
+      image: null,
+      existingImage: null
+    });
+  };
+
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    if (!editCategoryForm.name) {
+      toast.error("Category name is required.");
+      return;
+    }
+
+    // Check file size if new image is uploaded
+    const maxSize = 1 * 1024 * 1024; // 1MB
+    if (editCategoryForm.image && editCategoryForm.image.size > maxSize) {
+      toast.error(`Category image size exceeds 1MB limit. Please choose a smaller image.`);
+      return;
+    }
+
+    setSavingCategory(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("name", editCategoryForm.name);
+      if (editCategoryForm.image) {
+        formData.append("image", editCategoryForm.image);
+      }
+      await api.updateCategory(editingCategory, formData);
+      toast.success("Category updated successfully.");
+      handleCancelEdit();
+      loadCategories();
+    } catch (err) {
+      toast.error(err.message || "Failed to update category.");
     } finally {
       setSavingCategory(false);
     }
@@ -276,10 +347,10 @@ const AdminPanel = () => {
 
     try {
       await api.deleteCategory(categoryId);
-      setMessage(`Category "${categoryName}" deleted successfully.`);
+      toast.success(`Category "${categoryName}" deleted successfully.`);
       loadCategories();
     } catch (err) {
-      setMessage(err.message || "Failed to delete category.");
+      toast.error(err.message || "Failed to delete category.");
     }
   };
 
@@ -598,7 +669,7 @@ const AdminPanel = () => {
     const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
     
     if (!hasValidExtension) {
-      setMessage("Invalid file type. Please upload a CSV file (.csv extension required).");
+      toast.error("Invalid file type. Please upload a CSV file (.csv extension required).");
       e.target.value = '';
       return;
     }
@@ -606,14 +677,14 @@ const AdminPanel = () => {
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB in bytes
     if (file.size > maxSize) {
-      setMessage(`File size too large. Maximum file size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
+      toast.error(`File size too large. Maximum file size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
       e.target.value = '';
       return;
     }
 
     // Validate MIME type if available
     if (file.type && !file.type.includes('csv') && !file.type.includes('text') && file.type !== 'application/vnd.ms-excel') {
-      setMessage("Invalid file type. Please upload a valid CSV file.");
+      toast.error("Invalid file type. Please upload a valid CSV file.");
       e.target.value = '';
       return;
     }
@@ -628,7 +699,7 @@ const AdminPanel = () => {
         const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
         if (lines.length < 2) {
-          setMessage("CSV file must have at least a header row and one data row.");
+          toast.error("CSV file must have at least a header row and one data row.");
           return;
         }
 
@@ -657,7 +728,7 @@ const AdminPanel = () => {
         
         // Validate header row
         if (headerRow.length === 0 || headerRow.every(h => !h || h.trim() === '')) {
-          setMessage("CSV file has an invalid or empty header row. Please check your file format.");
+          toast.error("CSV file has an invalid or empty header row. Please check your file format.");
           return;
         }
 
@@ -667,7 +738,7 @@ const AdminPanel = () => {
         const expectedColumnCount = headerRow.length;
         const invalidRows = dataRows.filter((row, idx) => row.length !== expectedColumnCount);
         if (invalidRows.length > 0) {
-          setMessage(`CSV file has inconsistent column counts. Row ${dataRows.indexOf(invalidRows[0]) + 2} has ${invalidRows[0].length} columns but header has ${expectedColumnCount} columns.`);
+          toast.error(`CSV file has inconsistent column counts. Row ${dataRows.indexOf(invalidRows[0]) + 2} has ${invalidRows[0].length} columns but header has ${expectedColumnCount} columns.`);
           return;
         }
 
@@ -686,7 +757,7 @@ const AdminPanel = () => {
         });
 
         if (attributeColumns.length === 0) {
-          setMessage("CSV must have at least one attribute column (e.g., Size, Color, Material). Price, SKU, and Stock columns are optional.");
+          toast.error("CSV must have at least one attribute column (e.g., Size, Color, Material). Price, SKU, and Stock columns are optional.");
           return;
         }
 
@@ -743,15 +814,15 @@ const AdminPanel = () => {
           }
         });
 
-        setMessage(`Successfully imported ${newRows.length} variant(s) from CSV with ${newColumns.length} attribute(s).`);
+        toast.success(`Successfully imported ${newRows.length} variant(s) from CSV with ${newColumns.length} attribute(s).`);
       } catch (err) {
         console.error("CSV parsing error:", err);
-        setMessage(`Failed to parse CSV: ${err.message || "Invalid CSV format"}`);
+        toast.error(`Failed to parse CSV: ${err.message || "Invalid CSV format"}`);
       }
     };
 
     reader.onerror = () => {
-      setMessage("Failed to read CSV file.");
+      toast.error("Failed to read CSV file.");
     };
 
     reader.readAsText(file);
@@ -808,10 +879,10 @@ const AdminPanel = () => {
       link.click();
       document.body.removeChild(link);
       
-      setMessage(`CSV file downloaded successfully with ${rows.length} variant(s).`);
+      toast.success(`CSV file downloaded successfully with ${rows.length} variant(s).`);
     } catch (err) {
       console.error("CSV download error:", err);
-      setMessage(`Failed to download CSV: ${err.message || "Unknown error"}`);
+      toast.error(`Failed to download CSV: ${err.message || "Unknown error"}`);
     }
   };
 
@@ -819,7 +890,7 @@ const AdminPanel = () => {
   const handleExistingVariantsCSVDownload = () => {
     try {
       if (variants.length === 0) {
-        setMessage("No variants to download.");
+        toast.warning("No variants to download.");
         return;
       }
 
@@ -879,10 +950,10 @@ const AdminPanel = () => {
       link.click();
       document.body.removeChild(link);
       
-      setMessage(`CSV file downloaded successfully with ${rows.length} variant(s).`);
+      toast.success(`CSV file downloaded successfully with ${rows.length} variant(s).`);
     } catch (err) {
       console.error("CSV download error:", err);
-      setMessage(`Failed to download CSV: ${err.message || "Unknown error"}`);
+      toast.error(`Failed to download CSV: ${err.message || "Unknown error"}`);
     }
   };
 
@@ -897,7 +968,7 @@ const AdminPanel = () => {
     const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
     
     if (!hasValidExtension) {
-      setMessage("Invalid file type. Please upload a CSV file (.csv extension required).");
+      toast.error("Invalid file type. Please upload a CSV file (.csv extension required).");
       e.target.value = '';
       return;
     }
@@ -905,14 +976,14 @@ const AdminPanel = () => {
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB in bytes
     if (file.size > maxSize) {
-      setMessage(`File size too large. Maximum file size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
+      toast.error(`File size too large. Maximum file size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
       e.target.value = '';
       return;
     }
 
     // Validate MIME type if available
     if (file.type && !file.type.includes('csv') && !file.type.includes('text') && file.type !== 'application/vnd.ms-excel') {
-      setMessage("Invalid file type. Please upload a valid CSV file.");
+      toast.error("Invalid file type. Please upload a valid CSV file.");
       e.target.value = '';
       return;
     }
@@ -927,7 +998,7 @@ const AdminPanel = () => {
         const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
         if (lines.length < 2) {
-          setMessage("CSV file must have at least a header row and one data row.");
+          toast.error("CSV file must have at least a header row and one data row.");
           return;
         }
 
@@ -956,7 +1027,7 @@ const AdminPanel = () => {
         
         // Validate header row
         if (headerRow.length === 0 || headerRow.every(h => !h || h.trim() === '')) {
-          setMessage("CSV file has an invalid or empty header row. Please check your file format.");
+          toast.error("CSV file has an invalid or empty header row. Please check your file format.");
           return;
         }
 
@@ -966,7 +1037,7 @@ const AdminPanel = () => {
         const expectedColumnCount = headerRow.length;
         const invalidRows = dataRows.filter((row, idx) => row.length !== expectedColumnCount);
         if (invalidRows.length > 0) {
-          setMessage(`CSV file has inconsistent column counts. Row ${dataRows.indexOf(invalidRows[0]) + 2} has ${invalidRows[0].length} columns but header has ${expectedColumnCount} columns.`);
+          toast.error(`CSV file has inconsistent column counts. Row ${dataRows.indexOf(invalidRows[0]) + 2} has ${invalidRows[0].length} columns but header has ${expectedColumnCount} columns.`);
           return;
         }
 
@@ -985,7 +1056,7 @@ const AdminPanel = () => {
         });
 
         if (attributeColumns.length === 0) {
-          setMessage("CSV must have at least one attribute column (e.g., Size, Color, Material). Price, SKU, and Stock columns are optional.");
+          toast.error("CSV must have at least one attribute column (e.g., Size, Color, Material). Price, SKU, and Stock columns are optional.");
           return;
         }
 
@@ -1036,15 +1107,15 @@ const AdminPanel = () => {
           }
         });
 
-        setMessage(`Successfully imported ${newVariants.length} variant(s) from CSV with ${attributeColumns.length} attribute(s).`);
+        toast.success(`Successfully imported ${newVariants.length} variant(s) from CSV with ${attributeColumns.length} attribute(s).`);
       } catch (err) {
         console.error("CSV parsing error:", err);
-        setMessage(`Failed to parse CSV: ${err.message || "Invalid CSV format"}`);
+        toast.error(`Failed to parse CSV: ${err.message || "Invalid CSV format"}`);
       }
     };
 
     reader.onerror = () => {
-      setMessage("Failed to read CSV file.");
+      toast.error("Failed to read CSV file.");
     };
 
     reader.readAsText(file);
@@ -1053,12 +1124,25 @@ const AdminPanel = () => {
   const handleProductSubmit = async e => {
     e.preventDefault();
     if (!productForm.categoryName || !productForm.name || !productForm.image) {
-      setMessage("Category, product name, and product image are required.");
+      toast.error("Category, product name, and product image are required.");
+      return;
+    }
+
+    // Validate image sizes before submitting
+    const maxSize = 1 * 1024 * 1024; // 1MB
+    
+    if (productForm.image && productForm.image.size > maxSize) {
+      toast.error(`Main product image size exceeds 1MB limit. Please choose a smaller image.`);
+      return;
+    }
+    
+    const oversizedGalleryFiles = (galleryFiles || []).filter(file => file.size > maxSize);
+    if (oversizedGalleryFiles.length > 0) {
+      toast.error(`Some gallery images exceed 1MB limit. Please remove or replace them with smaller images.`);
       return;
     }
 
     setSavingProduct(true);
-    setMessage("");
 
     try {
       const formData = new FormData();
@@ -1105,7 +1189,7 @@ const AdminPanel = () => {
       formData.append("variants", JSON.stringify(cleanedVariants));
 
       await api.createProduct(formData);
-      setMessage("Product created.");
+      toast.success("Product created.");
       setProductForm({
         categoryName: "",
         name: "",
@@ -1118,7 +1202,7 @@ const AdminPanel = () => {
       setExistingImages([]);
       loadProducts();
     } catch (err) {
-      setMessage(err.message || "Failed to create product.");
+      toast.error(err.message || "Failed to create product.");
     } finally {
       setSavingProduct(false);
     }
@@ -1128,17 +1212,17 @@ const AdminPanel = () => {
     if (!window.confirm("Delete this product and all its variants?")) return;
     try {
       await api.deleteProduct(id);
-      setMessage("Product deleted.");
+      toast.success("Product deleted.");
       loadProducts();
     } catch (err) {
-      setMessage(err.message || "Failed to delete product.");
+      toast.error(err.message || "Failed to delete product.");
     }
   };
 
   const handleDeleteVariant = async (variantId, productId, index = null) => {
     if (!variantId) {
       console.error("Invalid variant ID:", variantId);
-      setMessage("Invalid variant ID. Cannot delete.");
+      toast.error("Invalid variant ID. Cannot delete.");
       return;
     }
     if (!window.confirm("Delete this variant?")) return;
@@ -1148,7 +1232,7 @@ const AdminPanel = () => {
 
     try {
       await api.deleteVariant(variantId);
-      setMessage("Variant deleted.");
+      toast.success("Variant deleted.");
       loadProducts();
 
       // update products list
@@ -1164,7 +1248,7 @@ const AdminPanel = () => {
       }
     } catch (err) {
       console.error("Error deleting variant:", err);
-      setMessage(err.message || "Failed to delete variant.");
+      toast.error(err.message || "Failed to delete variant.");
     } finally {
       if (index !== null) setDeletingVariantIndex(null);
     }
@@ -1173,7 +1257,7 @@ const AdminPanel = () => {
   // Handle bulk deletion of variants
   const handleBulkDeleteVariants = async () => {
     if (selectedVariantIds.length === 0) {
-      setMessage("Please select at least one variant to delete.");
+      toast.error("Please select at least one variant to delete.");
       return;
     }
 
@@ -1184,7 +1268,7 @@ const AdminPanel = () => {
     setDeletingVariants(true);
     try {
       await api.bulkDeleteVariants(selectedVariantIds);
-      setMessage(`Successfully deleted ${selectedVariantIds.length} variant(s).`);
+      toast.success(`Successfully deleted ${selectedVariantIds.length} variant(s).`);
       
       // Remove deleted variants from the current variants list
       setVariants(prev => prev.filter(v => !selectedVariantIds.includes(v.id)));
@@ -1196,7 +1280,7 @@ const AdminPanel = () => {
       loadProducts();
     } catch (err) {
       console.error("Error bulk deleting variants:", err);
-      setMessage(err.message || "Failed to delete variants.");
+      toast.error(err.message || "Failed to delete variants.");
     } finally {
       setDeletingVariants(false);
     }
@@ -1222,12 +1306,82 @@ const AdminPanel = () => {
     }
   };
 
+  const handleIncreasePrices = async () => {
+    const trimmedValue = priceIncreasePercentage?.trim() || "";
+    
+    if (!trimmedValue) {
+      toast.error("Please enter a percentage.");
+      return;
+    }
+
+    const percentage = parseFloat(trimmedValue);
+    
+    if (isNaN(percentage) || trimmedValue === "-" || trimmedValue === "+") {
+      toast.error("Please enter a valid percentage.");
+      return;
+    }
+
+    if (percentage < -99 || percentage > 1000) {
+      toast.error("Percentage must be between -99% and 1000%.");
+      return;
+    }
+
+    if (priceIncreaseType === "product" && !selectedProductForPriceIncrease) {
+      toast.error("Please select a product.");
+      return;
+    }
+
+    if (priceIncreaseType === "category" && !selectedCategoryForPriceIncrease) {
+      toast.error("Please select a category.");
+      return;
+    }
+
+    const absPercentage = Math.abs(percentage);
+    const action = percentage >= 0 ? "increase" : "decrease";
+    const confirmMessage = priceIncreaseType === "all" 
+      ? `Are you sure you want to ${action} prices by ${absPercentage}% for ALL products? This action cannot be undone.`
+      : priceIncreaseType === "product"
+      ? `Are you sure you want to ${action} prices by ${absPercentage}% for the selected product?`
+      : `Are you sure you want to ${action} prices by ${absPercentage}% for all products in the selected category?`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setIncreasingPrices(true);
+    try {
+      let response;
+      if (priceIncreaseType === "all") {
+        response = await api.increaseAllPrices(percentage);
+      } else if (priceIncreaseType === "product") {
+        response = await api.increaseProductPrices(selectedProductForPriceIncrease, percentage);
+      } else {
+        response = await api.increaseCategoryPrices(selectedCategoryForPriceIncrease, percentage);
+      }
+
+      toast.success(response.message || `Successfully ${action}d prices by ${absPercentage}%`);
+      
+      // Reset form
+      setPriceIncreasePercentage("");
+      setSelectedProductForPriceIncrease("");
+      setSelectedCategoryForPriceIncrease("");
+      
+      // Reload products to show updated prices
+      loadProducts();
+    } catch (err) {
+      console.error("Error updating prices:", err);
+      toast.error(err.message || "Failed to update prices.");
+    } finally {
+      setIncreasingPrices(false);
+    }
+  };
+
   const copyVariantsFromProduct = async (productId) => {
     if (!productId) return;
     
     const source = products.find(p => p.id === Number(productId));
     if (!source) {
-      setMessage("Product not found.");
+      toast.error("Product not found.");
       return;
     }
     
@@ -1238,7 +1392,7 @@ const AdminPanel = () => {
       const serverVariants = res.variants || [];
       
       if (serverVariants.length === 0) {
-        setMessage(`No variants found in ${source.name}.`);
+        toast.warning(`No variants found in ${source.name}.`);
         return;
       }
       
@@ -1333,11 +1487,11 @@ const AdminPanel = () => {
         // Clear variants state since we're using matrix mode
         setVariants([buildEmptyVariant()]);
         
-        setMessage(`Copied ${copied.length} variant(s) from ${source.name} into matrix. You can now edit them.`);
+        toast.success(`Copied ${copied.length} variant(s) from ${source.name} into matrix. You can now edit them.`);
       } else {
         // For non-matrix mode or editing, set variants directly
         setVariants(copied.length > 0 ? copied : [buildEmptyVariant()]);
-        setMessage(`Copied ${copied.length} variant(s) from ${source.name}. You can now edit them.`);
+        toast.success(`Copied ${copied.length} variant(s) from ${source.name}. You can now edit them.`);
         
         // If using matrix mode while editing, update columns but don't populate rows
         if (useMatrixMode && editProduct && copied.length > 0) {
@@ -1360,7 +1514,7 @@ const AdminPanel = () => {
       }
     } catch (err) {
       console.error("Failed to copy variants:", err);
-      setMessage(`Failed to copy variants: ${err.message || "Unknown error"}`);
+      toast.error(`Failed to copy variants: ${err.message || "Unknown error"}`);
     }
   };
 
@@ -1432,7 +1586,7 @@ const AdminPanel = () => {
     try {
       const v = variants[index];
       if (!v || !v.id) {
-        setMessage("Cannot save: variant has no id. Create it via Add Variant.");
+        toast.error("Cannot save: variant has no id. Create it via Add Variant.");
         return;
       }
 
@@ -1459,10 +1613,10 @@ const AdminPanel = () => {
         attributes: Object.keys(updated.attributes || {}).map(name => ({ name, value: updated.attributes[name] }))
       }) : pv));
 
-      setMessage("Variant saved successfully.");
+      toast.success("Variant saved successfully.");
     } catch (err) {
       console.error("Error saving variant:", err);
-      setMessage(err.message || "Failed to save variant.");
+      toast.error(err.message || "Failed to save variant.");
     } finally {
       setSavingProduct(false);
     }
@@ -1472,7 +1626,7 @@ const AdminPanel = () => {
     try {
       if (!product || !product.id) {
         console.error("Invalid product data:", product);
-        setMessage("Invalid product data. Cannot edit.");
+        toast.error("Invalid product data. Cannot edit.");
         return;
       }
 
@@ -1563,7 +1717,7 @@ const AdminPanel = () => {
       setActiveTab("product");
     } catch (error) {
       console.error("Error starting edit product:", error);
-      setMessage("Error loading product for editing: " + error.message);
+      toast.error("Error loading product for editing: " + error.message);
     }
   };
 
@@ -1575,9 +1729,24 @@ const AdminPanel = () => {
 
   const performSubmit = async (cleanEmptyIgnored = false) => {
     setSavingProduct(true);
-    setMessage("");
 
     try {
+      // Validate image sizes before submitting
+      const maxSize = 1 * 1024 * 1024; // 1MB
+      
+      if (productForm.image && productForm.image.size > maxSize) {
+        toast.error(`Main product image size exceeds 1MB limit. Please choose a smaller image.`);
+        setSavingProduct(false);
+        return;
+      }
+      
+      const oversizedGalleryFiles = (galleryFiles || []).filter(file => file.size > maxSize);
+      if (oversizedGalleryFiles.length > 0) {
+        toast.error(`Some gallery images exceed 1MB limit. Please remove or replace them with smaller images.`);
+        setSavingProduct(false);
+        return;
+      }
+      
       const formData = new FormData();
       formData.append("categoryName", productForm.categoryName);
       formData.append("productName", productForm.name);
@@ -1635,7 +1804,7 @@ const AdminPanel = () => {
       console.log("Submitting variants payload:", JSON.stringify(cleanedVariants, null, 2));
       await api.updateProduct(editProduct.id, formData);
 
-      setMessage(`Product updated! ${createdCount} variant(s) created, ${updatedCount} updated.`);
+      toast.success(`Product updated! ${createdCount} variant(s) created, ${updatedCount} updated.`);
       setEditProduct(null);
       setExistingProductImage(null);
       setProductForm({
@@ -1656,7 +1825,7 @@ const AdminPanel = () => {
     } catch (err) {
       console.error("Update product error:", err);
       const errorMsg = err.message || "Failed to update product. Please check console for details.";
-      setMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setSavingProduct(false);
     }
@@ -1665,18 +1834,18 @@ const AdminPanel = () => {
   const submitEditProduct = async (e) => {
     e.preventDefault();
     if (!editProduct) {
-      setMessage("No product selected for editing.");
+      toast.error("No product selected for editing.");
       return;
     }
 
     // Validation
     if (!productForm.name || productForm.name.trim() === "") {
-      setMessage("Product name is required.");
+      toast.error("Product name is required.");
       return;
     }
 
     if (!productForm.categoryName) {
-      setMessage("Category is required.");
+      toast.error("Category is required.");
       return;
     }
 
@@ -1684,7 +1853,7 @@ const AdminPanel = () => {
     const emptyIndices = findEmptyVariantIndices();
     if (emptyIndices.length > 0 && !confirmIgnoreEmpty) {
       setEmptyVariantIndices(emptyIndices);
-      setMessage(`There are ${emptyIndices.length} empty variant row(s). Fill or remove them, or click 'Ignore empty variants and submit'.`);
+      toast.warning(`There are ${emptyIndices.length} empty variant row(s). Fill or remove them, or click 'Ignore empty variants and submit'.`);
       return;
     }
 
@@ -1696,15 +1865,15 @@ const AdminPanel = () => {
     try {
       if (!product || !product.id) {
         console.error("Invalid product data for status toggle:", product);
-        setMessage("Invalid product data. Cannot update status.");
+        toast.error("Invalid product data. Cannot update status.");
         return;
       }
       await api.updateProductStatus(product.id, product.isActive ? 0 : 1);
-      setMessage(`Product ${product.isActive ? "deactivated" : "activated"}.`);
+      toast.success(`Product ${product.isActive ? "deactivated" : "activated"}.`);
       loadProducts();
     } catch (err) {
       console.error("Error toggling product status:", err);
-      setMessage(err.message || "Failed to update status.");
+      toast.error(err.message || "Failed to update status.");
     }
   };
 
@@ -1776,7 +1945,7 @@ const AdminPanel = () => {
           Access Denied
         </div>
         <div style={{ fontSize: '16px', color: '#666', textAlign: 'center' }}>
-          {message || "You do not have permission to access the admin panel."}
+          {"You do not have permission to access the admin panel."}
         </div>
         <div style={{ fontSize: '14px', color: '#999', textAlign: 'center' }}>
           Redirecting to homepage...
@@ -1794,7 +1963,6 @@ const AdminPanel = () => {
     <div className="admin-panel">
       <div className="admin-header">
         <h1>Admin Panel</h1>
-        {message && <div className="admin-message">{message}</div>}
       </div>
 
       <div className="admin-layout">
@@ -1883,6 +2051,9 @@ const AdminPanel = () => {
 
                     <div className="category-form-field">
                       <label className="category-field-label">Category Image *</label>
+                      <small style={{ display: 'block', color: '#666', marginBottom: '8px', fontSize: '12px' }}>
+                        Maximum file size: 1MB
+                      </small>
                       <div className="category-image-upload">
                         <input
                           type="file"
@@ -1891,6 +2062,13 @@ const AdminPanel = () => {
                           onChange={e => {
                             const file = e.target.files[0];
                             if (file) {
+                              // Check file size (1MB = 1 * 1024 * 1024 bytes)
+                              const maxSize = 1 * 1024 * 1024; // 1MB
+                              if (file.size > maxSize) {
+                                toast.error(`Image size exceeds 1MB limit. Selected file is ${(file.size / (1024 * 1024)).toFixed(2)}MB. Please choose a smaller image.`);
+                                e.target.value = ''; // Clear the input
+                                return;
+                              }
                               setCategoryForm(f => ({ ...f, image: file }));
                             }
                           }}
@@ -1942,6 +2120,77 @@ const AdminPanel = () => {
                         const image = cat.image?.startsWith("http")
                           ? cat.image
                             : `${API_BASE}${cat.image}`;
+                        const isEditing = editingCategory === cat.id;
+                        
+                        if (isEditing) {
+                          // Edit form
+                          return (
+                            <div key={cat.id} className="category-item-card category-edit-form">
+                              <form onSubmit={handleUpdateCategory}>
+                                <div className="category-form-field">
+                                  <label className="category-field-label">Category Name *</label>
+                                  <input
+                                    type="text"
+                                    value={editCategoryForm.name}
+                                    onChange={e => setEditCategoryForm(f => ({ ...f, name: e.target.value }))}
+                                    className="category-input"
+                                    required
+                                  />
+                                </div>
+                                
+                                <div className="category-form-field">
+                                  <label className="category-field-label">Category Image</label>
+                                  <div className="category-image-upload">
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={e => setEditCategoryForm(f => ({ ...f, image: e.target.files[0] }))}
+                                      className="category-file-input"
+                                      id={`edit-category-image-${cat.id}`}
+                                    />
+                                    <label htmlFor={`edit-category-image-${cat.id}`} className="category-image-upload-label">
+                                      <FontAwesomeIcon icon={faPlus} />
+                                      <span>{editCategoryForm.image ? "Change Image" : "Change Image (Optional)"}</span>
+                                    </label>
+                                  </div>
+                                  {(editCategoryForm.existingImage || editCategoryForm.image) && (
+                                    <div className="category-image-preview">
+                                      <img
+                                        src={editCategoryForm.image
+                                          ? URL.createObjectURL(editCategoryForm.image)
+                                          : editCategoryForm.existingImage?.startsWith("http")
+                                          ? editCategoryForm.existingImage
+                                          : `${API_BASE}${editCategoryForm.existingImage}`}
+                                        alt="Preview"
+                                        className="preview-image"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="category-edit-actions">
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className="btn-cancel-edit-category"
+                                    disabled={savingCategory}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="submit"
+                                    className="btn-update-category"
+                                    disabled={savingCategory}
+                                  >
+                                    {savingCategory ? "Updating..." : "Update"}
+                                  </button>
+                                </div>
+                              </form>
+                            </div>
+                          );
+                        }
+                        
+                        // Normal view
                         return (
                           <div key={cat.id} className="category-item-card">
                             <img src={image} alt={cat.name} className="category-item-image" />
@@ -1949,13 +2198,22 @@ const AdminPanel = () => {
                               <p className="category-item-name">{cat.name}</p>
                               <small className="category-item-slug">{cat.slug}</small>
                             </div>
-                            <button
-                              className="btn-delete-category"
-                              onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                              title="Delete category"
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
+                            <div className="category-item-actions">
+                              <button
+                                className="btn-edit-category"
+                                onClick={() => handleEditCategory(cat)}
+                                title="Edit category"
+                              >
+                                <FontAwesomeIcon icon={faEdit} />
+                              </button>
+                              <button
+                                className="btn-delete-category"
+                                onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                                title="Delete category"
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -2011,7 +2269,7 @@ const AdminPanel = () => {
 
                   <div className="product-form-field">
                     <label className="product-field-label">Description</label>
-                    <Editor
+                    <LazyTinyMCE
                       value={productForm.description || ""}
                       init={{
                         height: 220,
@@ -2086,7 +2344,7 @@ const AdminPanel = () => {
 
                   <div className="product-form-field">
                     <label className="product-field-label">Additional Description (for Additional Information tab)</label>
-                    <Editor
+                    <LazyTinyMCE
                       value={productForm.additionalDescription || ""}
                       init={{
                         height: 220,
@@ -2168,6 +2426,9 @@ const AdminPanel = () => {
                   
                   <div className="product-form-field">
                     <label className="product-field-label">Main Product Image *</label>
+                    <small style={{ display: 'block', color: '#666', marginBottom: '8px', fontSize: '12px' }}>
+                      Maximum file size: 1MB
+                    </small>
                     <div className="product-image-upload">
                       <input
                         type="file"
@@ -2176,7 +2437,15 @@ const AdminPanel = () => {
                         onChange={e => {
                           const file = e.target.files[0];
                           if (file) {
+                            // Check file size (1MB = 1 * 1024 * 1024 bytes)
+                            const maxSize = 1 * 1024 * 1024; // 1MB
+                            if (file.size > maxSize) {
+                              toast.error(`Image size exceeds 1MB limit. Selected file is ${(file.size / (1024 * 1024)).toFixed(2)}MB. Please choose a smaller image.`);
+                              e.target.value = ''; // Clear the input
+                              return;
+                            }
                             setProductForm(f => ({ ...f, image: file }));
+ // Clear any previous errors
                           }
                         }}
                         className="product-file-input"
@@ -2245,6 +2514,9 @@ const AdminPanel = () => {
 
                   <div className="product-form-field">
                     <label className="product-field-label">Gallery Images (Optional)</label>
+                    <small style={{ display: 'block', color: '#666', marginBottom: '8px', fontSize: '12px' }}>
+                      Maximum file size per image: 1MB
+                    </small>
                     <div className="gallery-upload-section-improved">
                       <input
                         type="file"
@@ -2254,7 +2526,31 @@ const AdminPanel = () => {
                         onChange={e => {
                           const newFiles = Array.from(e.target.files || []);
                           if (newFiles.length > 0) {
-                            setGalleryFiles(prev => [...prev, ...newFiles]);
+                            const maxSize = 1 * 1024 * 1024; // 1MB
+                            const validFiles = [];
+                            const invalidFiles = [];
+                            
+                            newFiles.forEach(file => {
+                              if (file.size > maxSize) {
+                                invalidFiles.push({
+                                  name: file.name,
+                                  size: (file.size / (1024 * 1024)).toFixed(2)
+                                });
+                              } else {
+                                validFiles.push(file);
+                              }
+                            });
+                            
+                            if (invalidFiles.length > 0) {
+                              const errorMsg = `Some images exceed 1MB limit:\n${invalidFiles.map(f => `- ${f.name} (${f.size}MB)`).join('\n')}\n\nPlease choose smaller images.`;
+                              toast.error(errorMsg);
+                            } else {
+ // Clear any previous errors
+                            }
+                            
+                            if (validFiles.length > 0) {
+                              setGalleryFiles(prev => [...prev, ...validFiles]);
+                            }
                           }
                           // Reset input to allow selecting same files again
                           e.target.value = '';
@@ -2866,7 +3162,7 @@ const AdminPanel = () => {
                                         handleDeleteVariant(variantId, editProduct && editProduct.id, idx);
                                       } else {
                                         setVariants(prev => prev.filter((_, i) => i !== idx));
-                                        setMessage("Variant removed.");
+                                        toast.success("Variant removed.");
                                       }
                                     }}
                                     disabled={deletingVariantIndex === idx}
@@ -3019,7 +3315,7 @@ const AdminPanel = () => {
                       className="btn-ignore-empty"
                       onClick={async () => {
                         setConfirmIgnoreEmpty(true);
-                        setMessage("Proceeding while ignoring empty variant rows...");
+                        toast.info("Proceeding while ignoring empty variant rows...");
                         await performSubmit(true);
                       }}
                     >
@@ -3057,6 +3353,143 @@ const AdminPanel = () => {
             <section className="admin-card">
               <div style={{ marginBottom: '24px' }}>
                 <h2 style={{ marginBottom: '20px' }}>Manage Products</h2>
+                
+                {/* Price Increase Section */}
+                <div style={{ 
+                  background: '#f8f9fa', 
+                  padding: '20px', 
+                  borderRadius: '8px', 
+                  marginBottom: '24px',
+                  border: '1px solid #e0e0e0'
+                }}>
+                  <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '600' }}>
+                    <FontAwesomeIcon icon={faPercent} style={{ marginRight: '8px', color: '#0066cc' }} />
+                    Adjust Prices by Percentage
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1', minWidth: '200px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                          Apply To
+                        </label>
+                        <select
+                          value={priceIncreaseType}
+                          onChange={(e) => {
+                            setPriceIncreaseType(e.target.value);
+                            setSelectedProductForPriceIncrease("");
+                            setSelectedCategoryForPriceIncrease("");
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '8px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            fontSize: '14px'
+                          }}
+                        >
+                          <option value="all">All Products</option>
+                          <option value="product">Single Product</option>
+                          <option value="category">Category</option>
+                        </select>
+                      </div>
+
+                      {priceIncreaseType === "product" && (
+                        <div style={{ flex: '1', minWidth: '200px' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                            Select Product
+                          </label>
+                          <select
+                            value={selectedProductForPriceIncrease}
+                            onChange={(e) => setSelectedProductForPriceIncrease(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px',
+                              border: '1px solid #ddd',
+                              borderRadius: '4px',
+                              fontSize: '14px'
+                            }}
+                          >
+                            <option value="">Choose a product...</option>
+                            {products.map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.name} ({p.categoryName || 'Uncategorised'})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {priceIncreaseType === "category" && (
+                        <div style={{ flex: '1', minWidth: '200px' }}>
+                          <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                            Select Category
+                          </label>
+                          <select
+                            value={selectedCategoryForPriceIncrease}
+                            onChange={(e) => setSelectedCategoryForPriceIncrease(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px',
+                              border: '1px solid #ddd',
+                              borderRadius: '4px',
+                              fontSize: '14px'
+                            }}
+                          >
+                            <option value="">Choose a category...</option>
+                            {categories.map(cat => (
+                              <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div style={{ flex: '1', minWidth: '150px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '13px', fontWeight: '500' }}>
+                          Percentage (%)
+                        </label>
+                        <input
+                          type="number"
+                          value={priceIncreasePercentage}
+                          onChange={(e) => setPriceIncreasePercentage(e.target.value)}
+                          placeholder="e.g., 10 or -10"
+                          step="0.01"
+                          style={{
+                            width: '100%',
+                            padding: '8px',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            fontSize: '14px'
+                          }}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleIncreasePrices}
+                        disabled={increasingPrices || !priceIncreasePercentage}
+                        style={{
+                          padding: '8px 20px',
+                          background: increasingPrices ? '#ccc' : '#0066cc',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: increasingPrices ? 'not-allowed' : 'pointer',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {increasingPrices ? 'Updating...' : 'Update Prices'}
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>
+                      Enter a positive percentage (e.g., 10) to increase prices, or a negative percentage (e.g., -10) to decrease prices. Range: -99% to 1000%. Prices are rounded to 2 decimal places.
+                    </p>
+                  </div>
+                </div>
+
                 <div className="manage-filters-improved">
                   <div className="search-input-wrapper">
                     <FontAwesomeIcon icon={faSearch} className="search-icon" />
@@ -3142,7 +3575,7 @@ const AdminPanel = () => {
                                 startEditProduct(p);
                               } catch (error) {
                                 console.error("Error in edit button click:", error);
-                                setMessage("Error loading product for editing: " + (error.message || "Unknown error"));
+                                toast.error("Error loading product for editing: " + (error.message || "Unknown error"));
                               }
                             }}
                           >
@@ -3158,7 +3591,7 @@ const AdminPanel = () => {
                                 toggleStatus(p);
                               } catch (error) {
                                 console.error("Error in toggle status:", error);
-                                setMessage("Error updating product status: " + (error.message || "Unknown error"));
+                                toast.error("Error updating product status: " + (error.message || "Unknown error"));
                               }
                             }}
                           >
@@ -3182,7 +3615,7 @@ const AdminPanel = () => {
                                 handleDeleteProduct(p.id);
                               } catch (error) {
                                 console.error("Error in delete button click:", error);
-                                setMessage("Error deleting product: " + (error.message || "Unknown error"));
+                                toast.error("Error deleting product: " + (error.message || "Unknown error"));
                               }
                             }}
                           >
@@ -3301,9 +3734,9 @@ const AdminPanel = () => {
                                     try {
                                       await api.updateOrderStatus(order.id, newStatus);
                                       loadOrders();
-                                      setMessage("Order status updated successfully.");
+                                      toast.success("Order status updated successfully.");
                                     } catch (err) {
-                                      setMessage(err.message || "Failed to update order status.");
+                                      toast.error(err.message || "Failed to update order status.");
                                     }
                                   }
                                 }}
@@ -3402,9 +3835,9 @@ const AdminPanel = () => {
                                       await api.updateOrderStatus(selectedOrder.id, newStatus);
                                       loadOrders();
                                       setSelectedOrder({...selectedOrder, status: newStatus});
-                                      setMessage("Order status updated successfully.");
+                                      toast.success("Order status updated successfully.");
                                     } catch (err) {
-                                      setMessage(err.message || "Failed to update order status.");
+                                      toast.error(err.message || "Failed to update order status.");
                                     }
                                   }
                                 }}
@@ -3718,7 +4151,7 @@ const AdminPanel = () => {
                                 startEditProduct(p);
                               } catch (error) {
                                 console.error("Error in edit button click:", error);
-                                setMessage("Error loading product for editing: " + (error.message || "Unknown error"));
+                                toast.error("Error loading product for editing: " + (error.message || "Unknown error"));
                               }
                             }}
                           >
@@ -3734,7 +4167,7 @@ const AdminPanel = () => {
                                 toggleStatus(p);
                               } catch (error) {
                                 console.error("Error in toggle status:", error);
-                                setMessage("Error updating product status: " + (error.message || "Unknown error"));
+                                toast.error("Error updating product status: " + (error.message || "Unknown error"));
                               }
                             }}
                           >
@@ -3758,7 +4191,7 @@ const AdminPanel = () => {
                                 handleDeleteProduct(p.id);
                               } catch (error) {
                                 console.error("Error in delete button click:", error);
-                                setMessage("Error deleting product: " + (error.message || "Unknown error"));
+                                toast.error("Error deleting product: " + (error.message || "Unknown error"));
                               }
                             }}
                           >
@@ -3808,7 +4241,7 @@ const AdminPanel = () => {
                   className="btn-confirm-cancel"
                   onClick={async () => {
                     if (!cancellationReason.trim()) {
-                      setMessage("Please provide a cancellation reason.");
+                      toast.error("Please provide a cancellation reason.");
                       return;
                     }
                     try {
@@ -3817,12 +4250,12 @@ const AdminPanel = () => {
                       if (selectedOrder && selectedOrder.id === pendingCancelOrder.id) {
                         setSelectedOrder({...selectedOrder, status: "cancelled", cancellation_reason: cancellationReason.trim()});
                       }
-                      setMessage("Order cancelled successfully.");
+                      toast.success("Order cancelled successfully.");
                       setShowCancelModal(false);
                       setPendingCancelOrder(null);
                       setCancellationReason("");
                     } catch (err) {
-                      setMessage(err.message || "Failed to cancel order.");
+                      toast.error(err.message || "Failed to cancel order.");
                     }
                   }}
                   disabled={!cancellationReason.trim()}

@@ -53,7 +53,7 @@
 .about-section-tag {
   display: inline-block;
   background: #e0f2f7;
-  color: #00ACEE;
+  color: #0369a1;
   padding: 6px 15px;
   border-radius: 20px;
   font-size: 12px;
@@ -86,7 +86,7 @@
 }
 
 .about-intro-content h2 strong {
-  color: #00ACEE;
+  color: #0369a1;
 }
 
 .about-intro-content p {
@@ -109,7 +109,7 @@
 .experience-badge-card h2 {
   font-size: 56px;
   font-weight: 800;
-  color: #00ACEE;
+  color: #0369a1;
   margin: 0;
   line-height: 1;
 }

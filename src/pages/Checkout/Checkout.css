@@ -250,17 +250,28 @@
   
   .place-order {
     width: 100%;
-    background: #5bc0de;
+    background: #0066cc;
     color: #fff;
     border: none;
-    padding: 12px;
+    padding: 14px;
     margin-top: 20px;
     cursor: pointer;
     font-size: 16px;
+    font-weight: 600;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
   }
   
   .place-order:hover {
-    background: #31b0d5;
+    background: #0052a3;
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.4);
+    transform: translateY(-1px);
+  }
+  
+  .place-order:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
   }
   
   @media (max-width: 900px) {

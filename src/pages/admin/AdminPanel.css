@@ -405,10 +405,36 @@
   color: #6b7280;
 }
 
-.btn-delete-category {
+.category-item-actions {
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  z-index: 10;
+}
+
+.btn-edit-category {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 123, 255, 0.9);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit-category:hover {
+  background: rgba(0, 123, 255, 1);
+  transform: scale(1.1);
+}
+
+.btn-delete-category {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -420,12 +446,69 @@
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
-  z-index: 10;
 }
 
 .btn-delete-category:hover {
   background: rgba(220, 38, 38, 1);
   transform: scale(1.1);
+}
+
+.category-edit-form {
+  padding: 20px;
+  background: #f8f9fa;
+  border: 2px solid #007bff;
+}
+
+.category-edit-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-update-category {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.btn-update-category:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.btn-update-category:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel-edit-category {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.btn-cancel-edit-category:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.btn-cancel-edit-category:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Product Form Improved Styles */

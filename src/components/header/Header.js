@@ -6,6 +6,7 @@ import { getCartTotal, getCartItemsCount } from "../../utils/cart";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPhone, faEnvelope, faShoppingCart, faSearch, faUser, faBars, faTimes, faChevronDown, faSignInAlt, faSignOutAlt, faUserCircle, faReceipt } from '@fortawesome/free-solid-svg-icons';
 import logo from '../../assets/logo.png';
+import logoWebp from '../../assets/logo.webp';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import { formatPrice } from '../../utils/currency';
 
@@ -212,7 +213,18 @@ const Header = () => {
 
             <header className="main-header">
                 <Link to="/" className="logo">
-                    <img src={logo} alt="RK Industries" className="logo-image" />
+                    <picture>
+                        <source srcSet={logoWebp} type="image/webp" />
+                        <img 
+                            src={logo} 
+                            alt="RK Industries" 
+                            className="logo-image"
+                            loading="eager"
+                            decoding="async"
+                            width="150"
+                            height="50"
+                        />
+                    </picture>
                 </Link>
 
                 <nav className="nav">
@@ -233,7 +245,7 @@ const Header = () => {
                     <Link to="/contact">Contact Us</Link>
                     <Link to="/bank-details">Bank Details</Link>
                     {user?.isAdmin && <Link to="/admin">Admin</Link>}
-                    <Link to="/cart">Cart</Link>
+                    <Link to="/dealership">Dealership</Link>
 
                 </nav>
 
@@ -241,6 +253,7 @@ const Header = () => {
                     <Link to="/cart" className="cart">
                         <FontAwesomeIcon icon={faShoppingCart} /> {formatPrice(cartTotal, currency, exchangeRate)} <span className="badge">{cartItemsCount}</span>
                     </Link>
+                    
                     <div className="search" ref={searchRef}>
                         <form onSubmit={handleSearchSubmit} style={{ display: 'flex' }}>
                             <input 
@@ -262,7 +275,7 @@ const Header = () => {
                                     }
                                 }}
                             />
-                            <button type="submit"><FontAwesomeIcon icon={faSearch} /></button>
+                            <button type="submit" aria-label="Search"><FontAwesomeIcon icon={faSearch} /></button>
                         </form>
                         {showSuggestions && searchResults.length > 0 && (
                             <div className="search-suggestions">
@@ -341,7 +354,7 @@ const Header = () => {
                     </div>
 
                     
-                    <button className="menu-btn" onClick={toggleMobileMenu}>
+                    <button className="menu-btn" onClick={toggleMobileMenu} aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}>
                         <FontAwesomeIcon icon={isMobileMenuOpen ? faTimes : faBars} />
                     </button>
                 </div>
@@ -384,6 +397,8 @@ const Header = () => {
                     <Link to="/contact" onClick={closeMobileMenu}>Contact Us</Link>
                     {user?.isAdmin && <Link to="/admin" onClick={closeMobileMenu}>Admin</Link>}
                     <Link to="/Cart" onClick={closeMobileMenu}>Cart</Link>
+                    <Link to="/dealership" onClick={closeMobileMenu}>Dealership</Link>
+
                     {isLoggedIn ? (
                         <>
                             <Link to="/profile" onClick={closeMobileMenu}>My Profile</Link>
@@ -399,8 +414,8 @@ const Header = () => {
                 </nav>
             </div>
 
-            {/* Mobile Floating Cart Button - Hidden on homepage */}
-            {cartItemsCount > 0 && location.pathname !== "/" && (
+            {/* Mobile Floating Cart Button - Hidden on homepage, cart, and checkout pages */}
+            {cartItemsCount > 0 && location.pathname !== "/" && location.pathname !== "/cart" && location.pathname !== "/checkout" && (
                 <Link to="/cart" className="mobile-cart-button">
                     <div className="mobile-cart-content">
                         <span className="mobile-cart-icon"><FontAwesomeIcon icon={faShoppingCart} /></span>

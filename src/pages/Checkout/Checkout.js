@@ -3,10 +3,15 @@ import { useNavigate } from "react-router-dom";
 import "./Checkout.css";
 import { getCart, getCartTotal, clearCart } from "../../utils/cart";
 import { api } from "../../api";
-import { Country, State, City } from "country-state-city";
+// Lazy load country-state-city to reduce initial bundle size
 import { useCurrency } from "../../contexts/CurrencyContext";
 import { formatPrice } from "../../utils/currency";
 import paymentQR from "../../assets/payment_qr.jpg";
+import paymentQRWebp from "../../assets/payment_qr.webp";
+import { loadScript, isScriptLoaded } from "../../utils/loadScript";
+
+// Razorpay checkout script URL - loaded dynamically only when user clicks Pay Now
+const RAZORPAY_CHECKOUT_URL = "https://checkout.razorpay.com/v1/checkout.js";
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -40,13 +45,15 @@ const Checkout = () => {
   });
 
   // Load states when country changes
-  const loadStatesForCountry = (countryCode) => {
+  const loadStatesForCountry = async (countryCode) => {
     if (!countryCode) {
       setStates([]);
       setCities([]);
       setSelectedStateCode("");
       return;
     }
+    // Dynamically import State when needed
+    const { State } = await import("country-state-city");
     const countryStates = State.getStatesOfCountry(countryCode);
     setStates(countryStates);
     setCities([]);
@@ -55,11 +62,13 @@ const Checkout = () => {
   };
 
   // Load cities when state changes
-  const loadCitiesForState = (countryCode, stateCode) => {
+  const loadCitiesForState = async (countryCode, stateCode) => {
     if (!countryCode || !stateCode) {
       setCities([]);
       return;
     }
+    // Dynamically import City when needed
+    const { City } = await import("country-state-city");
     const stateCities = City.getCitiesOfState(countryCode, stateCode);
     setCities(stateCities);
     setBilling(prev => ({ ...prev, city: "" }));
@@ -69,16 +78,19 @@ const Checkout = () => {
 
   // Load countries and set default to India
   useEffect(() => {
-    const allCountries = Country.getAllCountries();
-    setCountries(allCountries);
-    
-    // Set default to India if available
-    const india = allCountries.find(c => c.name === "India");
-    if (india) {
-      setBilling(prev => ({ ...prev, country: "India", countryCode: india.isoCode }));
-      setSelectedCountryCode(india.isoCode);
-      loadStatesForCountry(india.isoCode);
-    }
+    // Dynamically import Country to reduce initial bundle size
+    import("country-state-city").then(({ Country }) => {
+      const allCountries = Country.getAllCountries();
+      setCountries(allCountries);
+      
+      // Set default to India if available
+      const india = allCountries.find(c => c.name === "India");
+      if (india) {
+        setBilling(prev => ({ ...prev, country: "India", countryCode: india.isoCode }));
+        setSelectedCountryCode(india.isoCode);
+        loadStatesForCountry(india.isoCode);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -365,16 +377,62 @@ const Checkout = () => {
     // Calculate totals (GST only for India)
     const subtotalAmount = getCartTotal();
     const gstAmount = billing.country === "India" ? subtotalAmount * 0.18 : 0;
-    const totalAmount = subtotalAmount + gstAmount;
+    const shippingAmount = 0; // Free shipping
+    const totalAmount = subtotalAmount + gstAmount + shippingAmount;
+
+    // Validate minimum order amount
+    const orderCurrency = currency; // Use IP-based currency from CurrencyContext
+    let minimumOrderAmount;
+    if (orderCurrency === "INR") {
+      minimumOrderAmount = 20000; // ₹20,000 minimum for Indian orders
+      const orderAmountInINR = Math.ceil(totalAmount * exchangeRate);
+      if (orderAmountInINR < minimumOrderAmount) {
+        alert(`Minimum order amount is ₹${minimumOrderAmount.toLocaleString('en-IN')}. Your current order total is ₹${orderAmountInINR.toLocaleString('en-IN')}. Please add more items to your cart.`);
+        return;
+      }
+    } else {
+      minimumOrderAmount = 200; // $200 minimum for USD orders
+      if (totalAmount < minimumOrderAmount) {
+        alert(`Minimum order amount is $${minimumOrderAmount.toFixed(2)}. Your current order total is $${totalAmount.toFixed(2)}. Please add more items to your cart.`);
+        return;
+      }
+    }
 
     // Handle Razorpay payment
     if (billing.payment === "razorpay") {
       try {
-        // Determine currency based on country (INR for India, USD for others)
-        const orderCurrency = billing.country === "India" ? "INR" : "USD";
+        // Load Razorpay script dynamically if not already loaded
+        if (!isScriptLoaded("Razorpay")) {
+          try {
+            // Load script asynchronously (usually takes < 500ms)
+            await loadScript(RAZORPAY_CHECKOUT_URL, {
+              id: "razorpay-checkout-script",
+              async: true
+            });
+          } catch (scriptError) {
+            alert(`Failed to load payment gateway. Please check your internet connection and try again, or use bank transfer.`);
+            console.error("Razorpay script loading error:", scriptError);
+            return;
+          }
+        }
+
+        // Verify Razorpay is available
+        if (!window.Razorpay) {
+          throw new Error("Payment gateway failed to load. Please refresh and try again.");
+        }
+
+        // Determine currency based on IP address (INR for India, USD for others)
+        const orderCurrency = currency; // Use IP-based currency from CurrencyContext
+        
+        // Calculate amount based on currency
+        // If INR, convert from USD using exchange rate
+        let razorpayAmount = totalAmount;
+        if (orderCurrency === "INR") {
+          razorpayAmount = Math.ceil(totalAmount * exchangeRate); // Convert USD to INR and round up
+        }
         
         // Create Razorpay order
-        const razorpayOrderResponse = await api.createRazorpayOrder(totalAmount, orderCurrency);
+        const razorpayOrderResponse = await api.createRazorpayOrder(razorpayAmount, orderCurrency);
         
         if (!razorpayOrderResponse.orderId) {
           throw new Error("Failed to create Razorpay order");
@@ -398,7 +456,10 @@ const Checkout = () => {
                 items: cart,
                 subtotal: subtotalAmount,
                 gst: gstAmount,
-                total: totalAmount
+                shipping: shippingAmount,
+                total: totalAmount,
+                currency: orderCurrency,
+                exchangeRate: exchangeRate
               });
 
               // Clear cart after order is placed
@@ -426,8 +487,8 @@ const Checkout = () => {
           }
         };
 
-        // Enable all payment methods for Indian orders
-        if (billing.country === "India") {
+        // Enable all payment methods for Indian orders (based on IP address)
+        if (orderCurrency === "INR") {
           options.method = {
             netbanking: true,
             card: true,
@@ -466,6 +527,7 @@ const Checkout = () => {
       formData.append("items", JSON.stringify(cart));
       formData.append("subtotal", subtotalAmount.toString());
       formData.append("gst", gstAmount.toString());
+      formData.append("shipping", shippingAmount.toString());
       formData.append("total", totalAmount.toString());
       formData.append("paymentMethod", billing.payment);
 
@@ -491,7 +553,8 @@ const Checkout = () => {
   // Calculate totals (GST only for India)
   const subtotal = getCartTotal();
   const gst = billing.country === "India" ? subtotal * 0.18 : 0; // 18% GST only for India
-  const total = subtotal + gst;
+  const shipping = 0; // Free shipping
+  const total = subtotal + gst + shipping;
 
   return (
     <form className="checkout-container" onSubmit={handleSubmit}>
@@ -780,6 +843,11 @@ const Checkout = () => {
             </div>
           )}
 
+          <div className="order-row">
+            <span>Shipping</span>
+            <span style={{ color: '#10b981', fontWeight: '500' }}>Free</span>
+          </div>
+
           <div className="order-row total">
             <strong>Total</strong>
             <strong>{formatCurrency(total)}</strong>
@@ -855,16 +923,21 @@ const Checkout = () => {
                   border: '2px solid #e0e0e0',
                   borderRadius: '8px'
                 }}>
-                  <img 
-                    src={paymentQR} 
-                    alt="Scan & Pay QR Code" 
-                    style={{ 
-                      maxWidth: '250px', 
-                      width: '100%', 
-                      height: 'auto',
-                      borderRadius: '4px'
-                    }}
-                  />
+                  <picture>
+                    <source srcSet={paymentQRWebp} type="image/webp" />
+                    <img 
+                      src={paymentQR} 
+                      alt="Scan & Pay QR Code" 
+                      loading="lazy"
+                      decoding="async"
+                      style={{ 
+                        maxWidth: '250px', 
+                        width: '100%', 
+                        height: 'auto',
+                        borderRadius: '4px'
+                      }}
+                    />
+                  </picture>
                 </div>
               </div>
 

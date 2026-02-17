@@ -140,6 +140,14 @@ export const api = {
     }).then(handle);
   },
 
+  // ===== DEALERSHIP =====
+  submitDealershipApplication: (formData) =>
+    fetch(`${API_BASE}/api/dealership/submit-application`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData)
+    }).then(handle),
+
   // ===== ADMIN =====
   getAdminProducts: () =>
     fetch(`${API_BASE}/api/admin/products`).then(handle),
@@ -208,10 +216,53 @@ export const api = {
     }).then(handle);
   },
 
+  // Price increase functions
+  increaseAllPrices: (percentage) => {
+    const token = localStorage.getItem("authToken");
+    return fetch(`${API_BASE}/api/admin/products/increase-prices/all`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ percentage })
+    }).then(handle);
+  },
+
+  increaseProductPrices: (productId, percentage) => {
+    const token = localStorage.getItem("authToken");
+    return fetch(`${API_BASE}/api/admin/products/increase-prices/product/${productId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ percentage })
+    }).then(handle);
+  },
+
+  increaseCategoryPrices: (categoryId, percentage) => {
+    const token = localStorage.getItem("authToken");
+    return fetch(`${API_BASE}/api/admin/products/increase-prices/category/${categoryId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ percentage })
+    }).then(handle);
+  },
+
   // Admin Categories
   createCategory: formData =>
     fetch(`${API_BASE}/api/admin/categories`, {
       method: "POST",
+      body: formData
+    }).then(handle),
+
+  updateCategory: (categoryId, formData) =>
+    fetch(`${API_BASE}/api/admin/categories/${categoryId}`, {
+      method: "PUT",
       body: formData
     }).then(handle),
 

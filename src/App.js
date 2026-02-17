@@ -1,5 +1,6 @@
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { CurrencyProvider } from './contexts/CurrencyContext';
@@ -10,23 +11,41 @@ import WhatsAppFloat from './components/WhatsAppFloat/WhatsAppFloat';
 import EmailFloat from './components/EmailFloat/EmailFloat';
 import ScrollToTop from './components/ScrollToTop/ScrollToTop';
 
+// Critical routes - loaded immediately (homepage, product pages)
 import Homepage from './pages/homepage/Homepage';
 import CategoryProducts from './pages/products/Product';
 import ProductPage from './pages/detail-product/ProductPage';
-import AdminPanel from './pages/admin/AdminPanel';
-import Contact from './pages/Contact/Contact';
-import About from './pages/About/About';
-import BankDetails from './pages/BankDetails/BankDetails';
-import ShoppingCart from './pages/Cart/ShoppingCart';
-import Checkout from './pages/Checkout/Checkout';
-import Login from './components/Auth/Login';
-import Signup from './components/Auth/Signup';
-import VerifyEmail from './components/Auth/VerifyEmail';
-import ForgotPassword from './components/Auth/ForgotPassword';
-import ResetPassword from './components/Auth/ResetPassword';
-import Profile from './pages/Profile/Profile';
-import Orders from './pages/Orders/Orders';
-import RestaurantOrders from './pages/RestaurantOrders/RestaurantOrders';
+
+// Lazy load non-critical routes for code splitting
+const AdminPanel = lazy(() => import('./pages/admin/AdminPanel'));
+const Contact = lazy(() => import('./pages/Contact/Contact'));
+const About = lazy(() => import('./pages/About/About'));
+const BankDetails = lazy(() => import('./pages/BankDetails/BankDetails'));
+const ShoppingCart = lazy(() => import('./pages/Cart/ShoppingCart'));
+const Checkout = lazy(() => import('./pages/Checkout/Checkout'));
+const Login = lazy(() => import('./components/Auth/Login'));
+const Signup = lazy(() => import('./components/Auth/Signup'));
+const VerifyEmail = lazy(() => import('./components/Auth/VerifyEmail'));
+const ForgotPassword = lazy(() => import('./components/Auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./components/Auth/ResetPassword'));
+const Profile = lazy(() => import('./pages/Profile/Profile'));
+const Orders = lazy(() => import('./pages/Orders/Orders'));
+const RestaurantOrders = lazy(() => import('./pages/RestaurantOrders/RestaurantOrders'));
+const Dealership = lazy(() => import('./pages/Dealership/Dealership'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div style={{ 
+    display: 'flex', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    minHeight: '50vh',
+    fontSize: '18px',
+    color: '#666'
+  }}>
+    Loading...
+  </div>
+);
 function App() {
   return (
     <CurrencyProvider>
@@ -34,26 +53,28 @@ function App() {
       <Header />
 
       <main>
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-          <Route path="/category/:slug" element={<CategoryProducts />} />
-          <Route path="/product/:id" element={<ProductPage />} />
-          <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/bank-details" element={<BankDetails />} />
-          <Route path="/cart" element={<ShoppingCart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/restaurant-orders" element={<RestaurantOrders />} />
-        </Routes>
-
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<Homepage />} />
+            <Route path="/category/:slug" element={<CategoryProducts />} />
+            <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/bank-details" element={<BankDetails />} />
+            <Route path="/cart" element={<ShoppingCart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/orders" element={<Orders />} />
+            <Route path="/restaurant-orders" element={<RestaurantOrders />} />
+            <Route path="/dealership" element={<Dealership />} />
+          </Routes>
+        </Suspense>
       </main>
 
       <Footer />

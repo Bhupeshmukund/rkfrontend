@@ -1,6 +1,7 @@
 import React from 'react';
 import './BankDetails.css';
 import paymentQR from '../../assets/payment_qr.jpg';
+import paymentQRWebp from '../../assets/payment_qr.webp';
 
 const BankDetails = () => {
     return (
@@ -44,11 +45,16 @@ const BankDetails = () => {
                     <div className="bankDetails-scan-pay-section">
                         <h2 className="bankDetails-section-title bankDetails-scan-title">SCAN & PAY</h2>
                         <div className="bankDetails-qr-code-container">
-                            <img 
-                                src={paymentQR} 
-                                alt="Scan & Pay QR Code" 
-                                className="bankDetails-qr-code-image"
-                            />
+                            <picture>
+                                <source srcSet={paymentQRWebp} type="image/webp" />
+                                <img 
+                                    src={paymentQR} 
+                                    alt="Scan & Pay QR Code" 
+                                    className="bankDetails-qr-code-image"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </picture>
                         </div>
                     </div>
                 </div>
